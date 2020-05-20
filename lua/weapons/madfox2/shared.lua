@@ -1,27 +1,27 @@
 /*---------------------------------------------------------
 ~ BTB Sweps
 ~
-~ These are mainly meant to be used in SP. MP functionality is gross, but that's Garry's Mod for you.
+~ These are mainly meant to be used in SP. MP functionality is gross.
 ~
-~ This base is tailored to the viewmodels within this package. Do not try to reuse this base, or these models, unless you know what you're doing.
-~ Please also do not re-release any of the contents of this package without asking me first.
-~
-~ Generic Default 	- Entities, effects, various code
-~ Zookie 			- Tailoring GDC base to BTB viewmodels, various edits
-~ Marlwolf 			- Ported assets from BTB
-~ Magenta 			- Compiled assets for GMod
-~ Siminov 			- Shell eject \ minor stuff
+~ Generic Default 	- The only guy who really did anything cool tbh
+~ Zookie 			- lmao fuck this guy
+~ Marlwolf 			- bro
+~ Magenta 			- Dude she's so angry
+~ Siminov 			- I'd suck his dick but he'd probably get to mine first
 ---------------------------------------------------------*/
 
 local ToggleSights	= CreateClientConVar("ToggleSights", 0, true, false, "Makes it so ironsights are toggled, and not held")		// Enable/Disable
 local UseGDCBullets = CreateClientConVar("UseGDCBullets", 1, true, false, "Use GDC bullet entities")
-local RecoilMult = CreateClientConVar("RecoilMult", 1.00, true, false, "Recoil multiplier. Do you want more, or less?")
+local RecoilMult 	= CreateClientConVar("RecoilMult", 1.00, true, false, "Recoil multiplier. Do you want more, or less?")
 
+// Weapon Descriptions
 SWEP.Category				= "BTB - Base"
 SWEP.Author					= "Generic Default, Marlwolf, Zookie, Magenta, Siminov"
 SWEP.Contact				= "Discord: Zookie#0210"
 SWEP.Purpose				= "BTB SWeps"
 SWEP.Instructions			= "E + R = Holster\nE + Left Mouse = Select Fire"
+
+// Settings
 SWEP.ViewModelFOV			= 60		
 SWEP.ViewModelFlip			= false		
 SWEP.DrawCrosshair			= false	
@@ -48,10 +48,11 @@ SWEP.Secondary.Automatic	= false					// Automatic/Semi Auto
 SWEP.Secondary.Ammo			= "none"
 SWEP.Secondary.IronFOV		= 65					// How much you 'zoom' in. Less is more! 
 
-// These aren't used
+// Not used within this addon
 SWEP.IronSightsPos 	= Vector (0, 0, 0)
 SWEP.IronSightsAng 	= Vector (0, 0, 0)
 
+// Run Position
 SWEP.RunSightsPos = Vector (0, 0, 0)
 SWEP.RunSightsAng = Vector (0, 0, 0)
 
@@ -80,6 +81,7 @@ end
 function SWEP:Deploy()
 	
 	// Set variables false
+	self:SetNWBool("FirstHolster", true)
 	self:SetIronsights(false, self.Owner)
 	self:SetNWBool("Holster", false)
 	self:SetNWBool("InIron", false)
@@ -96,15 +98,36 @@ function SWEP:Deploy()
 		end
 	end
 	
+	// Set timers
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	
+	// Deploy succesful
 	return true
 	
 end
 
-// Weapon holstering
+/*
+function SWEP:Holster( wep )
+
+	if (SERVER) then self.Owner:PrintMessage(HUD_PRINTTALK, "FIRST CALL") end
+
+	if self:GetNWBool("FirstHolster") == true then
+		if (SERVER) then self.Owner:PrintMessage(HUD_PRINTTALK, "SECOND CALL") end
+		self:SetNWBool("FirstHolster", false)
+		self:SendWeaponAnim(self.HolsterAnim)
+		self.weppy = wep
+		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function() self:Holster(self.weppy) end)
+		return
+	end
+
+	return true
+
+end
+*/
+
+// Weapon holstering - Sub think function
 function SWEP:HolsterWep()
 	
 	// Stop on these conditions
@@ -137,7 +160,7 @@ function SWEP:HolsterWep()
 	
 end
 
-// Select-Fire
+// Select fire - Sub think function
 function SWEP:SelectFire()
 
 	if not IsFirstTimePredicted() then return end
@@ -157,7 +180,7 @@ function SWEP:SelectFire()
 	
 end
 
-// Can we shoot?
+// Checks if we can attack or not
 function SWEP:CanPrimaryAttack()
 	// Helper function for PrimaryAttack
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_USE) or self.Owner:KeyDown(IN_SPEED) then 
@@ -169,7 +192,7 @@ function SWEP:CanPrimaryAttack()
 	else
 		return true
 	end
-	
+
 end
 
 // Shooting
@@ -212,13 +235,13 @@ function SWEP:PrimaryAttack()
 	
 	self:ShootFX()
 	
-	// Rate of fire
+	// Rate of fire - Converts RPM to delay
 	self.Weapon:SetNextPrimaryFire(CurTime() + (1/(self.Primary.RPM/60)) ) 
 	
 end
 
+// Various effects that occur when shooting
 function SWEP:ShootFX()
-	// Various effects that occur when shooting
 	
 	if not IsFirstTimePredicted() then return end
 
@@ -276,6 +299,7 @@ function SWEP:FireRocket()
 	
 end
 
+// For firing regular ol' bullets
 function SWEP:ShootBullet( damage, num_bullets, aimcone )
 
 	local bullet = {}
@@ -293,8 +317,7 @@ function SWEP:ShootBullet( damage, num_bullets, aimcone )
 
 end
 
-
-// Ironsights
+// Ironsights - Animation
 function SWEP:SecondaryAttack()
 
 	if self:GetNWBool("Holster") == true or self.Owner:KeyDown(IN_SPEED) then return end
