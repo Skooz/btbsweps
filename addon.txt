@@ -1,0 +1,10 @@
+"AddonInfo"
+{
+	"name"				"BTB Scripted Weapons"
+	"version"			"2.0"
+	"up_date"			"2020"
+	"author_name"			"Zookie"
+	"author_email"			"gadzooks297@gmail.com"
+	"author_url"			"http://www.steamcommunity.com/id/NiXXiiON"
+	"info"				""
+}

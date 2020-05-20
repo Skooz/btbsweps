@@ -1,0 +1,30 @@
+	-- ~ Ugly sprinting shit ~
+	if self.Owner:KeyDown(IN_SPEED) then
+		-- Disable ironsights
+		if self:GetNWBool("InIron") == true then 
+		if not IsFirstTimePredicted() then return end
+			self.Owner:SetFOV( 0, 0.3 )
+			self:SetNWBool("InIron" , false)
+			if self.Weapon:Clip1() == 0 then
+				self.Weapon:SendWeaponAnim( self.IronOutEmpty )
+			else
+				self.Weapon:SendWeaponAnim( self.IronOutAnim )
+			end
+		end
+		-- Sprinting holdtypes
+		if self.HoldType == "pistol" or self.HoldType == "revolver" then
+			self:SetWeaponHoldType("normal")
+		else
+			self:SetWeaponHoldType("passive")
+		end
+		-- Set sprinting positions
+		self.IronSightsPos = self.RunSightsPos
+		self.IronSightsAng = self.RunSightsAng
+		self:SetIronsights(true, self.Owner)
+	end				
+	-- Reset stuff after sprinting
+	if self.Owner:KeyReleased (IN_SPEED) then	
+		self:SetWeaponHoldType(self.HoldType) 
+		self:SetIronsights(false, self.Owner)
+		self.Owner:SetFOV( 0, 0.3 )
+	end		
