@@ -1,6 +1,7 @@
 // Variables that are used on both client and server
 local UseGDCBullets = CreateClientConVar("UseGDCBullets", 1, true, false, "Use GDC bullet entities")
-// This is a seperate branch of the base for scoped weapons
+
+// This is a sub-base for weapons that should use scope overlays
 SWEP.Base 						= "madfox2"
 
 SWEP.Secondary.ScopeZoom		= 0

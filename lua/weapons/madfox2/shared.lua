@@ -80,17 +80,17 @@ end
 // Drawing the weapon
 function SWEP:Deploy()
 	
-	// Set variables false
+	// Set variables
 	self:SetNWBool("FirstHolster", true)
 	self:SetIronsights(false, self.Owner)
 	self:SetNWBool("Holster", false)
 	self:SetNWBool("InIron", false)
 	
-	// Play the first-draw animation
+	// Draw animations
 	if self.FirstDraw == true then
 		self.FirstDraw = false
 		self.Weapon:SendWeaponAnim( self.FirstDrawAnim )
-	else // Play the regular draw animation from now on
+	else
 		if self.Weapon:Clip1() == 0 then	
 			self.Weapon:SendWeaponAnim( self.EmptyDrawAnim )
 		else
@@ -130,10 +130,10 @@ end
 // Weapon holstering - Sub think function
 function SWEP:HolsterWep()
 	
-	// Stop on these conditions
+	// Don't holster if
 	if self:GetNWBool("InIron") == true or self:GetNWFloat("InAnim") > CurTime() or not IsFirstTimePredicted() then return end
 
-	// If holding use (E), and reload (R) is pressed
+	// Holster toggle
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_RELOAD) then
 		if self:GetNWBool("Holster") == false then
 			self:SetNWBool("Holster", true)
@@ -200,6 +200,7 @@ function SWEP:PrimaryAttack()
 	
 	if !self:CanPrimaryAttack() then return end
 	
+	// Use GDC bullets or regular - Determined in settings menu\tab
 	if UseGDCBullets:GetBool() then
 		self:FireRocket() 			-- Fire the bullet-entity
 	else
@@ -209,6 +210,7 @@ function SWEP:PrimaryAttack()
 	self.Weapon:EmitSound(self.Primary.Sound)
 	self.Weapon:TakePrimaryAmmo(1)
 	
+	// Animation handling
 	if self.BoltAction then
 		self:SendWeaponAnim(ACT_VM_SECONDARYATTACK)
 		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
@@ -235,8 +237,8 @@ function SWEP:PrimaryAttack()
 	
 	self:ShootFX()
 	
-	// Rate of fire - Converts RPM to delay
-	self.Weapon:SetNextPrimaryFire(CurTime() + (1/(self.Primary.RPM/60)) ) 
+	// Rate of fire - Converts RPM to delay to next show
+	self.Weapon:SetNextPrimaryFire(CurTime() + (1/(self.Primary.RPM/60))
 	
 end
 
@@ -347,6 +349,7 @@ end
 
 function SWEP:IronSights()
 
+	// By default, SecondaryAttack is only called when secondary attack (mouse 2) is PRESSED
 	// This allows the ironsights to be a "hold", instead of a toggle.
 	if not ToggleSights:GetBool() and self.Owner:KeyReleased(IN_ATTACK2) and self:GetNWBool("InIron") and IsFirstTimePredicted() then
 		self:SecondaryAttack()
@@ -434,10 +437,10 @@ function SWEP:Sway()
 		self.SwayScale 	= 0.2
 		self.BobScale 	= 0.2
 	elseif self.Owner:KeyDown(IN_SPEED) then
-		self.SwayScale 	= 3
+		self.SwayScale 	= 1
 		self.BobScale 	= 3
 	else
-		self.SwayScale 	= 2
+		self.SwayScale 	= 1
 		self.BobScale 	= 1
 	end
 end
@@ -447,12 +450,13 @@ Think
 ---------------------------------------------------------*/
 function SWEP:Think()
 	
-	// We call these functions in think instead of cluttering up think with their code
+	// Sub-Think functions
+	// These are called every time think is called
 	self:IronSights()
 	self:SelectFire()
-	self:HolsterWep()
 	self:Sprint()
 	self:Sway()
+	self:HolsterWep()
 
 end
 
@@ -464,44 +468,44 @@ local IRONSIGHT_TIME = 0.3
 
 function SWEP:GetViewModelPosition(pos, ang)
 
-	if (not self.IronSightsPos) then return pos, ang end
+	if (self.IronSightsPos) then
+		local bIron = self.Weapon:GetNWBool("Ironsights")
 
-	local bIron = self.Weapon:GetNWBool("Ironsights")
+		if (bIron != self.bLastIron) then
+			self.bLastIron = bIron
+			self.fIronTime = CurTime()
+		end
 
-	if (bIron != self.bLastIron) then
-		self.bLastIron = bIron
-		self.fIronTime = CurTime()
+		local fIronTime = self.fIronTime or 0
+
+		if (not bIron and fIronTime < CurTime() - IRONSIGHT_TIME) then
+			return pos, ang
+		end
+
+		local Mul = 1.0
+
+		if (fIronTime > CurTime() - IRONSIGHT_TIME) then
+			Mul = math.Clamp((CurTime() - fIronTime) / IRONSIGHT_TIME, 0, 1)
+			if not bIron then Mul = 1 - Mul end
+		end
+
+		local Offset	= self.IronSightsPos
+
+		if (self.IronSightsAng) then
+			ang = ang * 1
+			ang:RotateAroundAxis(ang:Right(), self.IronSightsAng.x * Mul)
+			ang:RotateAroundAxis(ang:Up(), self.IronSightsAng.y * Mul)
+			ang:RotateAroundAxis(ang:Forward(), self.IronSightsAng.z * Mul)
+		end
+
+		local Right 	= ang:Right()
+		local Up 		= ang:Up()
+		local Forward 	= ang:Forward()
+
+		pos = pos + Offset.x * Right * Mul
+		pos = pos + Offset.y * Forward * Mul
+		pos = pos + Offset.z * Up * Mul
 	end
-
-	local fIronTime = self.fIronTime or 0
-
-	if (not bIron and fIronTime < CurTime() - IRONSIGHT_TIME) then
-		return pos, ang
-	end
-
-	local Mul = 1.0
-
-	if (fIronTime > CurTime() - IRONSIGHT_TIME) then
-		Mul = math.Clamp((CurTime() - fIronTime) / IRONSIGHT_TIME, 0, 1)
-		if not bIron then Mul = 1 - Mul end
-	end
-
-	local Offset	= self.IronSightsPos
-
-	if (self.IronSightsAng) then
-		ang = ang * 1
-		ang:RotateAroundAxis(ang:Right(), self.IronSightsAng.x * Mul)
-		ang:RotateAroundAxis(ang:Up(), self.IronSightsAng.y * Mul)
-		ang:RotateAroundAxis(ang:Forward(), self.IronSightsAng.z * Mul)
-	end
-
-	local Right 	= ang:Right()
-	local Up 		= ang:Up()
-	local Forward 	= ang:Forward()
-
-	pos = pos + Offset.x * Right * Mul
-	pos = pos + Offset.y * Forward * Mul
-	pos = pos + Offset.z * Up * Mul
 
 	return pos, ang
 	
@@ -528,14 +532,11 @@ function SWEP:DrawWorldModel( )
 	end
 
 	offset = hand.Ang:Right( ) * self.Offset.Pos.Right + hand.Ang:Forward( ) * self.Offset.Pos.Forward + hand.Ang:Up( ) * self.Offset.Pos.Up
-
 	hand.Ang:RotateAroundAxis( hand.Ang:Right( ), self.Offset.Ang.Right )
 	hand.Ang:RotateAroundAxis( hand.Ang:Forward( ), self.Offset.Ang.Forward )
 	hand.Ang:RotateAroundAxis( hand.Ang:Up( ), self.Offset.Ang.Up )
-
 	self:SetRenderOrigin( hand.Pos + offset )
 	self:SetRenderAngles( hand.Ang )
-
 	self:DrawModel( )
 	
 end
