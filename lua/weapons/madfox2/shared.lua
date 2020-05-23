@@ -1,7 +1,7 @@
 /*---------------------------------------------------------
 ~ BTB Sweps
 ~
-~ These are mainly meant to be used in SP. MP functionality is gross.
+~ These are mainly meant to be used in SP. MP polish is WIP.
 ~
 ~ Generic Default 	- The only guy who really did anything cool tbh
 ~ Zookie 			- lmao fuck this guy
@@ -16,8 +16,8 @@ local RecoilMult 	= CreateClientConVar("RecoilMult", 1.00, true, false, "Recoil 
 
 // Weapon Descriptions
 SWEP.Category				= "BTB - Base"
-SWEP.Author					= "Generic Default, Marlwolf, Zookie, Magenta, Siminov"
-SWEP.Contact				= "Discord: Zookie#0210"
+SWEP.Author					= "\nZookie, Marlwolf, Generic Default, Magenta, Siminov"
+SWEP.Contact				= "\nDiscord: Zookie#0210"
 SWEP.Purpose				= "BTB SWeps"
 SWEP.Instructions			= "E + R = Holster\nE + Left Mouse = Select Fire"
 
@@ -48,7 +48,7 @@ SWEP.Secondary.Automatic	= false					// Automatic/Semi Auto
 SWEP.Secondary.Ammo			= "none"
 SWEP.Secondary.IronFOV		= 65					// How much you 'zoom' in. Less is more! 
 
-// Not used within this addon
+// Deprecated - Just a helper (for now) for this addon
 SWEP.IronSightsPos 	= Vector (0, 0, 0)
 SWEP.IronSightsAng 	= Vector (0, 0, 0)
 
@@ -56,12 +56,15 @@ SWEP.IronSightsAng 	= Vector (0, 0, 0)
 SWEP.RunSightsPos = Vector (0, 0, 0)
 SWEP.RunSightsAng = Vector (0, 0, 0)
 
-// Initilization
+
+/*---------------------------------------------------------
+Initialize
+
+- Called before deploy
+- Setup variables and other junk here.
+---------------------------------------------------------*/
 function SWEP:Initialize()
-	
-	// Pre-cache the firing sound
-	util.PrecacheSound(self.Primary.Sound)
-	
+		
 	// Fetch what hand-skin the player is using
 	if self.Owner:IsPlayer() and file.Exists("Plyr_BTB_Hands/"..self.Owner:UniqueID()..".txt","DATA") then
 		self.Owner:GetViewModel():SetBodygroup(1,tonumber(file.Read("Plyr_BTB_Hands/"..self.Owner:UniqueID()..".txt")))
@@ -72,13 +75,28 @@ function SWEP:Initialize()
 	
 end
 
-// Set FirstDraw to true on equip so we can play the first-draw animation
+
+/*---------------------------------------------------------
+Equip(ply)
+
+- (ply) is the player getting equipped, but this is just self anyways
+- Mainly using this so whenever the weapon is equipped,
+or picked up, the first draw animation is played.
+---------------------------------------------------------*/
 function SWEP:Equip(ply)
 	self.FirstDraw = true
 end
 
-// Drawing the weapon
+
+/*---------------------------------------------------------
+Deploy
+
+- Deploy\draw the weapon. 
+- Do deploy animation and some variable setup here.
+---------------------------------------------------------*/
 function SWEP:Deploy()
+
+	if not IsFirstTimePredicted() then return end
 	
 	// Set variables
 	self:SetNWBool("FirstHolster", true)
@@ -108,26 +126,45 @@ function SWEP:Deploy()
 	
 end
 
-/*
+/*---------------------------------------------------------
+Holster
+
+- (wep) is the weapon entity we're switching to
+- This is function is adjusted to: first play the holster
+anim when swapping weapons, then call SelectWeapon when
+the animation is complete, which calls holster again,
+thereby properly swapping weapons.
+---------------------------------------------------------*/
 function SWEP:Holster( wep )
 
-	if (SERVER) then self.Owner:PrintMessage(HUD_PRINTTALK, "FIRST CALL") end
-
-	if self:GetNWBool("FirstHolster") == true then
-		if (SERVER) then self.Owner:PrintMessage(HUD_PRINTTALK, "SECOND CALL") end
-		self:SetNWBool("FirstHolster", false)
-		self:SendWeaponAnim(self.HolsterAnim)
-		self.weppy = wep
-		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function() self:Holster(self.weppy) end)
-		return
+	if not IsFirstTimePredicted() or not IsValid(wep) or self:GetNWFloat("InAnim") > CurTime() then return end
+	
+	// First holster attempt - Do animation and make sure it's not interrupted
+	if self.Weapon:GetNWBool("FirstHolster") then
+		self.Weapon:SendWeaponAnim( self.HolsterAnim )
+		self:SetNWFloat("SwapAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
+			function()
+				self.Weapon:SetNWBool("FirstHolster",false)
+				if (SERVER) and self.Owner:HasWeapon(wep:GetClass()) then self.Owner:SelectWeapon(wep:GetClass()) end
+			end)
+		return false // Return false on the first call so we can do the animation
+	else // Second holster attempt
+		return true // Return true on the second call so we can swap weapons
 	end
 
-	return true
-
 end
-*/
 
-// Weapon holstering - Sub think function
+
+/*---------------------------------------------------------
+HolsterWep
+
+- Called in Think
+- Allows for a manual holster. Adjusts holdtypes too.
+- Mostly a roleplaying feature. Has no practical use.
+---------------------------------------------------------*/
 function SWEP:HolsterWep()
 	
 	// Don't holster if
@@ -160,7 +197,14 @@ function SWEP:HolsterWep()
 	
 end
 
-// Select fire - Sub think function
+
+/*---------------------------------------------------------
+SelectFire
+
+- Called in Think
+- Allows us to swap between auto and semi-auto fire rates
+- TODO: Add burst-fire option
+---------------------------------------------------------*/
 function SWEP:SelectFire()
 
 	if not IsFirstTimePredicted() then return end
@@ -180,9 +224,16 @@ function SWEP:SelectFire()
 	
 end
 
-// Checks if we can attack or not
+
+/*---------------------------------------------------------
+CanPrimaryAttack
+
+- Helper function to set some conditions for whether
+or not we can shoot. 
+- Just neater to do it this way.
+---------------------------------------------------------*/
 function SWEP:CanPrimaryAttack()
-	// Helper function for PrimaryAttack
+
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_USE) or self.Owner:KeyDown(IN_SPEED) then 
 		return false
 	elseif ( self.Weapon:Clip1() <= 0 ) or self:WaterLevel() == 3 then
@@ -195,8 +246,15 @@ function SWEP:CanPrimaryAttack()
 
 end
 
-// Shooting
+
+/*---------------------------------------------------------
+PrimaryAttack
+
+- Shooting things handled here; anim, sound, ammo, etc.
+---------------------------------------------------------*/
 function SWEP:PrimaryAttack()
+
+	if not IsFirstTimePredicted() then return end
 	
 	if !self:CanPrimaryAttack() then return end
 	
@@ -238,11 +296,17 @@ function SWEP:PrimaryAttack()
 	self:ShootFX()
 	
 	// Rate of fire - Converts RPM to delay to next show
-	self.Weapon:SetNextPrimaryFire(CurTime() + (1/(self.Primary.RPM/60))
+	self.Weapon:SetNextPrimaryFire(CurTime() + (1/(self.Primary.RPM/60)))
 	
 end
 
-// Various effects that occur when shooting
+
+/*---------------------------------------------------------
+ShootFX
+
+- Called in PrimaryAttack
+- Handles various effects; muzzle flash and bullet shells
+---------------------------------------------------------*/
 function SWEP:ShootFX()
 	
 	if not IsFirstTimePredicted() then return end
@@ -285,10 +349,16 @@ function SWEP:ShootFX()
 	self.Owner:MuzzleFlash()					-- Muzzle light from shooting
 end
 
-// For firing GDC bullet entities
+
+/*---------------------------------------------------------
+FireRocket
+
+- Called in PrimaryAttack
+- Rockets are entities, as are Generic Default's bullets
+- Think of GD's bullets as mini rockets
+---------------------------------------------------------*/
 function SWEP:FireRocket() 
-	
-	// Create bullet-entity
+
 	if SERVER then
 		local bullet = ents.Create(self.Primary.Round)
 		if !bullet:IsValid() then return false end
@@ -298,10 +368,17 @@ function SWEP:FireRocket()
 		bullet:Spawn()
 		bullet:Activate()
 	end
-	
+
 end
 
-// For firing regular ol' bullets
+
+/*---------------------------------------------------------
+ShootBullet
+
+- Called in PrimaryAttack
+- Shoot regular bullets.
+- TODO: Actual damage value (handled in primaryattack)
+---------------------------------------------------------*/
 function SWEP:ShootBullet( damage, num_bullets, aimcone )
 
 	local bullet = {}
@@ -310,7 +387,7 @@ function SWEP:ShootBullet( damage, num_bullets, aimcone )
 	bullet.Src 	= self.Owner:GetShootPos() -- Source
 	bullet.Dir 	= self.Owner:GetAimVector() -- Dir of bullet
 	bullet.Spread 	= Vector( aimcone, aimcone, 0 )	-- Aim Cone
-	bullet.Tracer	= 0 -- Show a tracer on every x bullets
+	bullet.Tracer	= 1 -- Show a tracer on every x bullets
 	bullet.Force	= (0.1*damage) -- Amount of force to give to phys objects
 	bullet.Damage	= damage
 	bullet.AmmoType = "Pistol"
@@ -319,10 +396,18 @@ function SWEP:ShootBullet( damage, num_bullets, aimcone )
 
 end
 
-// Ironsights - Animation
+
+/*---------------------------------------------------------
+SecondaryAttack
+
+- Ironsights stuff is handled here because it's neatly
+predicted and other junk. 
+---------------------------------------------------------*/
 function SWEP:SecondaryAttack()
 
-	if self:GetNWBool("Holster") == true or self.Owner:KeyDown(IN_SPEED) then return end
+	if not IsFirstTimePredicted() then return end
+
+	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_SPEED) then return end
 	
 	if not self:GetNWBool("InIron") then
 		self:SetNWBool("InIron" , true)
@@ -347,6 +432,14 @@ function SWEP:SecondaryAttack()
 	
 end
 
+
+/*---------------------------------------------------------
+IronSights
+
+- This is a simple QOL function. It serves as a toggle
+for the hold/toggle ironsights setting.
+---------------------------------------------------------*/
+
 function SWEP:IronSights()
 
 	// By default, SecondaryAttack is only called when secondary attack (mouse 2) is PRESSED
@@ -357,12 +450,19 @@ function SWEP:IronSights()
 
 end
 
-// Reload
+
+/*---------------------------------------------------------
+Reload
+
+- Called when the reload button is pressed
+- Might want a custom reload function; this is janky,
+but hey, it works.
+---------------------------------------------------------*/
 function SWEP:Reload()
 	
-	if self.Owner:KeyDown(IN_USE) or self:GetNWBool("Holster") == true or self.Weapon:Clip1() >= self.Primary.ClipSize  then 
+	if self.Owner:KeyDown(IN_USE) or self:GetNWFloat("SwapAnim") > CurTime() or self:GetNWBool("Holster") or self.Weapon:Clip1() >= self.Primary.ClipSize then 
 		return
-	elseif self:GetNWBool("InIron") == true and self.Weapon:Clip1() < self.Primary.ClipSize then
+	elseif self:GetNWBool("InIron") and self.Weapon:Clip1() < self.Primary.ClipSize then
 		self:SecondaryAttack()
 	end
 	
@@ -383,13 +483,20 @@ function SWEP:Reload()
 	
 end
 
-// Sprinting
+
+/*---------------------------------------------------------
+Sprint
+
+- Called in Think
+- Uses GetViewModelPos to move the view-model to specified
+vectors. Could be pasta'd as ironsights code, but we use
+animations in this pack
+---------------------------------------------------------*/
 function SWEP:Sprint()
-	// Called in Think
 	if self.Owner:KeyDown(IN_SPEED) then
-		// Disable ironsights; This is done because SecondaryAttack cannot be called while sprinting, so we do it manually.
+		// Disable ironsights; this is done here because SecondaryAttack cannot be called while sprinting, so we do it manually.
+		// Yeah, it's fucking stupid, eat my ass
 		if self:GetNWBool("InIron") == true then 
-			if not IsFirstTimePredicted() then return end
 			self.Owner:SetFOV( 0, 0.3 )
 			self:SetNWBool("InIron" , false)
 			if self.Weapon:Clip1() == 0 then
@@ -430,7 +537,15 @@ function SWEP:Sprint()
 	-- end
 end
 
-// For bob & sway movement
+
+/*---------------------------------------------------------
+Sway
+
+- Called in Think.
+- Sets Bob and Sway scales. Can be handy to adjust these for 
+different situations, such as more bob\sway when running, 
+etc.
+---------------------------------------------------------*/
 function SWEP:Sway()
 	// Called in Think
 	if self:GetNWFloat("InIron") == true then
@@ -445,13 +560,14 @@ function SWEP:Sway()
 	end
 end
 
+
 /*---------------------------------------------------------
 Think
+
+- Think is called every frame / tick
 ---------------------------------------------------------*/
 function SWEP:Think()
 	
-	// Sub-Think functions
-	// These are called every time think is called
 	self:IronSights()
 	self:SelectFire()
 	self:Sprint()
@@ -463,6 +579,8 @@ end
 
 /*---------------------------------------------------------
 GetViewModelPosition
+
+- Manipulate viewmodel position
 ---------------------------------------------------------*/
 local IRONSIGHT_TIME = 0.3
 
@@ -511,6 +629,13 @@ function SWEP:GetViewModelPosition(pos, ang)
 	
 end
 
+
+/*---------------------------------------------------------
+DrawWorldModel
+
+- Allows manipulation of the world model
+- Very helpful for positioning world models via lua
+---------------------------------------------------------*/
 function SWEP:DrawWorldModel( )
 
 	local hand, offset, rotate
@@ -541,8 +666,12 @@ function SWEP:DrawWorldModel( )
 	
 end
 
+
 /*---------------------------------------------------------
 SetIronsights
+
+- Mainly used for ironsights\sprint junk
+- Kinda old and not mine. Should probably rework this.
 ---------------------------------------------------------*/
 function SWEP:SetIronsights(b)
 	self.Weapon:SetNWBool("Ironsights", b)
