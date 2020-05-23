@@ -2395,15 +2395,14 @@ util.PrecacheSound("BTB_ROCKET.Flight")
 // Knife
 //
 
-
 sound.Add({
 	name = "BTB_KNIFE.Swing",
 	channel = CHAN_RELOAD,
 	volume = 1.0,
 	soundlevel = 100,
-	sound = 			"weapons/btb/knife/knife_swing1.wav",
-	sound = 			"weapons/btb/knife/knife_swing2.wav",
-	
+	pitch = { 95, 105 },
+
+	sound = { "weapons/btb/knife/knife_swing1.wav", "weapons/btb/knife/knife_swing2.wav" }
 }) 
 util.PrecacheSound("BTB_KNIFE.Swing")
 
@@ -2415,7 +2414,6 @@ sound.Add({
 	soundlevel = 100,
     sound = 	"weapons/btb/knife/knife_hit1.wav",
 	sound = 	"weapons/btb/knife/knife_hit2.wav",
-	
 }) 
 util.PrecacheSound("BTB_KNIFE.Stab")
 

@@ -46,7 +46,7 @@ SWEP.Secondary.ClipSize		= 0					// Size of a clip
 SWEP.Secondary.DefaultClip	= 0					// Default number of bullets in a clip
 SWEP.Secondary.Automatic	= false					// Automatic/Semi Auto
 SWEP.Secondary.Ammo			= "none"
-SWEP.Secondary.IronFOV		= 65					// How much you 'zoom' in. Less is more! 
+SWEP.Secondary.IronFOV		= 65					// UNUSED
 
 // Deprecated - Just a helper (for now) for this addon
 SWEP.IronSightsPos 	= Vector (0, 0, 0)
@@ -105,7 +105,7 @@ function SWEP:Deploy()
 	self:SetNWBool("InIron", false)
 	
 	// Draw animations
-	if self.FirstDraw == true then
+	if self.FirstDraw == true and self.Weapon:Clip1() != 0 then
 		self.FirstDraw = false
 		self.Weapon:SendWeaponAnim( self.FirstDrawAnim )
 	else
@@ -130,18 +130,19 @@ end
 Holster
 
 - (wep) is the weapon entity we're switching to
-- This is function is adjusted to: first play the holster
+- This function is adjusted to: first play the holster
 anim when swapping weapons, then call SelectWeapon when
-the animation is complete, which calls holster again,
+the animation is complete, which will call holster again,
 thereby properly swapping weapons.
 ---------------------------------------------------------*/
 function SWEP:Holster( wep )
 
-	if not IsFirstTimePredicted() or not IsValid(wep) or self:GetNWFloat("InAnim") > CurTime() then return end
+	if not IsFirstTimePredicted() or !IsValid(wep) or not wep or self:GetNWFloat("InAnim") > CurTime() then return end
 	
 	// First holster attempt - Do animation and make sure it's not interrupted
 	if self.Weapon:GetNWBool("FirstHolster") then
 		self.Weapon:SendWeaponAnim( self.HolsterAnim )
+		self.Weapon:EmitSound(Sound("Holster.Wep"))
 		self:SetNWFloat("SwapAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
@@ -236,7 +237,7 @@ function SWEP:CanPrimaryAttack()
 
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_USE) or self.Owner:KeyDown(IN_SPEED) then 
 		return false
-	elseif ( self.Weapon:Clip1() <= 0 ) or self:WaterLevel() == 3 then
+	elseif ( self.Weapon:Clip1() <= 0 ) or self.Owner:WaterLevel() >= 3 then
 		self:EmitSound( "Dry.Pistol" )
 		self:SetNextPrimaryFire( CurTime() + 0.5 )
 		return false
@@ -436,6 +437,7 @@ end
 /*---------------------------------------------------------
 IronSights
 
+- Called in Think
 - This is a simple QOL function. It serves as a toggle
 for the hold/toggle ironsights setting.
 ---------------------------------------------------------*/
@@ -525,16 +527,18 @@ function SWEP:Sprint()
 		end
 	end		
 	
-	// This sprinting code lets you use the quick-holster anims. Only issue is you can't reload with this.
-	-- if self.Owner:KeyPressed(IN_SPEED) then
-		-- if not IsFirstTimePredicted() then return end
-		-- self.Weapon:SendWeaponAnim( self.QuickHolsterAnim )
-	-- end
+	// Potential for basic sprint anims
+	/*
+	if self.Owner:KeyPressed(IN_SPEED) then
+		if not IsFirstTimePredicted() then return end
+		self.Weapon:SendWeaponAnim( self.QuickHolsterAnim )
+	end
 	
-	-- if self.Owner:KeyReleased(IN_SPEED) then
-		-- if not IsFirstTimePredicted() then return end
-		-- self.Weapon:SendWeaponAnim(self.DrawAnim)
-	-- end
+	if self.Owner:KeyReleased(IN_SPEED) then
+		if not IsFirstTimePredicted() then return end
+		self.Weapon:SendWeaponAnim(self.DrawAnim)
+	end
+	*/
 end
 
 

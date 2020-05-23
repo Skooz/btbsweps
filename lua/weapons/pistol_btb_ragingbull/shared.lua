@@ -1,12 +1,12 @@
 // Variables that are used on both client and server
-SWEP.Base 					= "madfox2"
+SWEP.Base 						= "madfox2"
 
 SWEP.Category					= "BTB - Pistols"
 SWEP.ViewModel					= Model("models/weapons/btb/v_ragingbull.mdl")
 SWEP.WorldModel					= Model("models/weapons/btb/w_ragingbull.mdl")
-SWEP.HoldType				= "revolver"
-SWEP.Spawnable				= true
-SWEP.AdminSpawnable			= true
+SWEP.HoldType					= "revolver"
+SWEP.Spawnable					= true
+SWEP.AdminSpawnable				= true
 
 SWEP.Primary.Sound				= Sound("BTB_RagingBull.Fire")    
 SWEP.Primary.Round				= ("zooks_357_490")
