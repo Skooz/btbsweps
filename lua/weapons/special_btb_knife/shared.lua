@@ -74,6 +74,7 @@ SWEP.IronOutEmpty		= NULL
 SWEP.ReloadAnim 		= NULL
 SWEP.EmptyReloadAnim 	= NULL
 
+SWEP.UseIdle = true
 SWEP.IdleAnim 			= ACT_VM_IDLE
 SWEP.EmptyIdleAnim 		= ACT_VM_IDLE
 
@@ -91,6 +92,103 @@ Swing 1: ACT_VM_PRIMARYATTACK
 Swing 2?: ACT_VM_IDLE_3
 
 */
+
+/*---------------------------------------------------------
+   Name: SWEP:PrimaryAttack()
+   Desc: +attack1 has been pressed.
+---------------------------------------------------------*/
+function SWEP:PrimaryAttack()
+
+	if not IsValid(self.Owner) then return end
+
+	if timer.Exists("StartIdle") then timer.Destroy("StartIdle") end
+
+	self.Owner:SetAnimation(PLAYER_ATTACK1)
+	self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+
+	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
+
+	local animTime = self.Owner:GetViewModel():SequenceDuration()/12
+
+	local tr = {}
+	tr.start = self.Owner:GetShootPos()
+	tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 50)
+	tr.filter = self.Owner
+	tr.mask = MASK_SHOT
+	local trace = util.TraceLine(tr)
+	if (trace.Hit) then
+		// If we hit an NPC
+		if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
+			if self:EntsInSphereBack(tr.endpos, 12) then
+				self.Owner:GetViewModel():SetPlaybackRate(1.5)
+				bullet = {}
+				bullet.Num    = 1
+				bullet.Src    = self.Owner:GetShootPos()
+				bullet.Dir    = self.Owner:GetAimVector()
+				bullet.Spread = Vector(0, 0, 0)
+				bullet.Tracer = 0
+				bullet.Force  = 1
+				bullet.Damage = 60
+				timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
+				self.Weapon:EmitSound("BTB_KNIFE.Stab")
+				return
+			end 
+			self.Owner:GetViewModel():SetPlaybackRate(1.5)
+			bullet = {}
+			bullet.Num    = 1
+			bullet.Src    = self.Owner:GetShootPos()
+			bullet.Dir    = self.Owner:GetAimVector()
+			bullet.Spread = Vector(0, 0, 0)
+			bullet.Tracer = 0
+			bullet.Force  = 1
+			bullet.Damage = 35
+			timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
+			self.Weapon:EmitSound("BTB_KNIFE.Stab")
+		else // If we hit something else
+			self.Owner:GetViewModel():SetPlaybackRate(1.5)
+			bullet = {}
+			bullet.Num    = 1
+			bullet.Src    = self.Owner:GetShootPos()
+			bullet.Dir    = self.Owner:GetAimVector()
+			bullet.Spread = Vector(0, 0, 0)
+			bullet.Tracer = 0
+			bullet.Force  = 1
+			bullet.Damage = 25
+			timer.Simple(animTime, 
+			function() 
+				self.Owner:FireBullets(bullet) 
+				util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+			end)
+			self.Weapon:EmitSound("BTB_KNIFE.Stab")
+		end
+	else // If we hit nothing
+		if not IsFirstTimePredicted() then return end
+		self.Owner:GetViewModel():SetPlaybackRate(1.5)
+		self.Weapon:EmitSound("BTB_KNIFE.Swing")
+	end 
+
+	self.Weapon:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
+
+	// Do Recoil
+	timer.Simple(animTime, 
+	function() 
+		-- Calculate angles
+		local anglo
+		if self.Owner:KeyDown(IN_DUCK) then
+			anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat()), 0)
+		else
+			anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat()), 0)
+		end
+		-- Do recoil with angles
+		self.Owner:ViewPunch(anglo)
+		if (game.SinglePlayer() and SERVER) or (not game.SinglePlayer() and CLIENT) then
+			self.Owner:SetEyeAngles(self.Owner:EyeAngles() - anglo)
+		end
+	end)
+
+	// Start idle animation
+	timer.Create("StartIdle", self.Owner:GetViewModel():SequenceDuration() - 0.7, 1, function() self:SendWeaponAnim(ACT_VM_IDLE) end)
+end
 
 /*---------------------------------------------------------
    Name: SWEP:EntityFaceBack
@@ -124,143 +222,17 @@ function SWEP:EntityFaceBack(ent)
 end
 
 /*---------------------------------------------------------
-   Name: SWEP:PrimaryAttack()
-   Desc: +attack1 has been pressed.
----------------------------------------------------------*/
-function SWEP:PrimaryAttack()
-
-	if not IsValid(self.Owner) then return end
-	
-	self.Owner:SetAnimation(PLAYER_ATTACK1)
-	
-	timer.Create( "strike1", 0.15, 1, 
-	function()
-		self:SetNWFloat("animSpeed", 1)
-
-		local tr = {}
-		tr.start = self.Owner:GetShootPos()
-		tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 50)
-		tr.filter = self.Owner
-		tr.mask = MASK_SHOT
-		local trace = util.TraceLine(tr)
-		if (trace.Hit) then
-			// If we hit an NPC
-			if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
-				if self:EntsInSphereBack(tr.endpos, 12) then
-					bullet = {}
-					bullet.Num    = 1
-					bullet.Src    = self.Owner:GetShootPos()
-					bullet.Dir    = self.Owner:GetAimVector()
-					bullet.Spread = Vector(0, 0, 0)
-					bullet.Tracer = 0
-					bullet.Force  = 1
-					bullet.Damage = 60
-					self.Owner:FireBullets(bullet)
-					self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-					self:SetNWFloat("animSpeed", 1)
-					self.Owner:GetViewModel():SetPlaybackRate(self:GetNWFloat("animSpeed"))
-					self.Weapon:EmitSound("BTB_KNIFE.Stab")
-					return
-				end 
-				bullet = {}
-				bullet.Num    = 1
-				bullet.Src    = self.Owner:GetShootPos()
-				bullet.Dir    = self.Owner:GetAimVector()
-				bullet.Spread = Vector(0, 0, 0)
-				bullet.Tracer = 0
-				bullet.Force  = 1
-				bullet.Damage = 35
-				self.Owner:FireBullets(bullet) 
-				self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-				self.Owner:GetViewModel():SetPlaybackRate(1.25)
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-			else // If we hit something else
-				bullet = {}
-				bullet.Num    = 1
-				bullet.Src    = self.Owner:GetShootPos()
-				bullet.Dir    = self.Owner:GetAimVector()
-				bullet.Spread = Vector(0, 0, 0)
-				bullet.Tracer = 0
-				bullet.Force  = 1
-				bullet.Damage = 25
-				self.Owner:FireBullets(bullet) 
-				self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-				self.Owner:GetViewModel():SetPlaybackRate(1.33)
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-				util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
-			end
-		else // If we hit nothing
-			if not IsFirstTimePredicted() then return end
-			self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-			self.Owner:GetViewModel():SetPlaybackRate(1.5)
-			self.Weapon:EmitSound("BTB_KNIFE.Swing")
-		end 
-	end)
-	
-	if ((game.SinglePlayer() and SERVER) or CLIENT) then
-		self.Weapon:SetNetworkedFloat("LastShootTime", CurTime())
-	end
-
-	self.Weapon:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
-
-	timer.Simple(self.Primary.Delay/3, function() 
-	// Recoil
-	-- Calculate angles
-	local anglo
-	if self.Owner:KeyDown(IN_DUCK) then
-		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat()), 0)
-	else
-		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat()), 0)
-	end
-	-- Do recoil with angles
-	self.Owner:ViewPunch(anglo)
-	if (game.SinglePlayer() and SERVER) or (not game.SinglePlayer() and CLIENT) then
-		self.Owner:SetEyeAngles(self.Owner:EyeAngles() - anglo)
-	end
-	end)
-
-	//self:IdleAnimation(1)
-end
-
-/*---------------------------------------------------------
-Deploy
-
-- Deploy\draw the weapon. 
-- Do deploy animation and some variable setup here.
----------------------------------------------------------*/
-function SWEP:Deploy()
-
-	if not IsFirstTimePredicted() then return end
-	
-	// Set variables
-	self:SetNWBool("FirstHolster", true)
-	self:SetIronsights(false, self.Owner)
-	self:SetNWBool("Holster", false)
-	self:SetNWBool("InIron", false)
-	
-	// Draw animations
-	self.Weapon:SendWeaponAnim( ACT_VM_DRAW )
-	
-	// Set timers
-	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	
-	// Deploy succesful
-	return true
-	
-end
-
-/*---------------------------------------------------------
    Name: SWEP:SecondaryAttack()
    Desc: +attack2 has been pressed.
 ---------------------------------------------------------*/
 function SWEP:SecondaryAttack()
 end
 
+// Don't reload knives
 function SWEP:Reload()
 end
 
+// Don't need to think
 function SWEP:Think()
 end
 

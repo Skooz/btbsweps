@@ -4,7 +4,7 @@ include('shared.lua')
 
 function ENT:Initialize()
 
-	self.Entity:SetModel("models/weapons/w_GDC_FragGrenade.mdl")
+	self.Entity:SetModel("models/weapons/btb/w_fraggrenade_thrown.mdl")
 	self.Entity:PhysicsInit( SOLID_VPHYSICS )
 	self.Entity:SetMoveType( MOVETYPE_VPHYSICS )
 	self.Entity:SetSolid( SOLID_VPHYSICS )

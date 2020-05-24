@@ -9,7 +9,7 @@ SWEP.Spawnable					= true
 SWEP.AdminSpawnable				= true
 
 SWEP.Primary.Sound				= Sound("BTB_RPG7.Fire")
-SWEP.Primary.Round				= ("zooks_rpg_heat")
+SWEP.Primary.Round				= ("zooks_at4_84mm")
 SWEP.Primary.RPM				= 50						// This is in Rounds Per Minute
 SWEP.Primary.ClipSize			= 1						// Size of a clip
 SWEP.Primary.DefaultClip		= 4
