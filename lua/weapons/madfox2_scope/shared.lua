@@ -21,7 +21,7 @@ SWEP.ScopeScale 				= 0.5
 SWEP.ReticleScale 				= 0.5
 SWEP.Velocity					= 850
 
-SWEP.IronSightsPos 				= Vector (0, -100, 0)
+SWEP.IronSightsPos 				= Vector (0, -110, 0)
 SWEP.IronSightsAng 				= Vector (0, 0, 0)
 
 function SWEP:Initialize()
@@ -106,7 +106,7 @@ function SWEP:SecondaryAttack()
 	end
 	
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
+	//self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	
 end
 

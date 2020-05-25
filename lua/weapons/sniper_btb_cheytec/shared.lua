@@ -9,7 +9,7 @@ SWEP.Spawnable				= true
 SWEP.AdminSpawnable			= true
 
 SWEP.Primary.Sound				= Sound("BTB_cheytec.Fire")
-SWEP.Primary.Round				= ("zooks_7.62x51_ap")
+SWEP.Primary.Round				= ("zooks_12.7x99_ap")
 SWEP.Primary.RPM				= 60					// This is in Rounds Per Minute
 SWEP.Primary.ClipSize			= 10					// Size of a clip
 SWEP.Primary.DefaultClip		= 20					// Default number of bullets in a clip

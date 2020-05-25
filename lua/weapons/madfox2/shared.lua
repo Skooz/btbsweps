@@ -224,6 +224,8 @@ SelectFire
 ---------------------------------------------------------*/
 function SWEP:SelectFire()
 	
+	if self.Category == "BTB - Pistols" or self.Category == "BTB - Special" or self.Category == "BTB - Long-rifles" then return end
+
 	// If holding use (E), and trigger (left click) is pressed
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK) then
 		if not IsFirstTimePredicted() then return end
@@ -591,58 +593,70 @@ function SWEP:Think()
 
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK2) and CurTime() > self:GetNWFloat("MeleeAnim") and !self:GetNWBool("InIron") and !self:GetNWBool("Holster") then
 		if not IsFirstTimePredicted() then return end
-
-		if self.Category == "BTB - Rifles" then
-			self:SendWeaponAnim(ACT_VM_HITCENTER)
+		if self.Category != "BTB - Rifles" then
+			if !self:GetNWBool("FirstHolster") then return end
+			self:SetNWBool("FirstHolster", false)
+			self.Owner:Give("special_btb_quickknife")
+			self.Owner:SelectWeapon("special_btb_quickknife")
+			timer.Simple(self.Owner:GetViewModel():SequenceDuration()-0.25, 
+			function() 
+				if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end
+				self.Owner:SelectWeapon(self.Weapon:GetClass())
+				self.Owner:StripWeapon("special_btb_quickknife")
+				if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end
+				self:SetNWBool("FirstHolster", true)
+			end)
 		else
+			self:SendWeaponAnim(ACT_VM_HITCENTER)
+			
+			self.Weapon:EmitSound("BTB_Folley.Cloth_Fast")
 
+			local animTime = self.Owner:GetViewModel():SequenceDuration()/8
+			local tr = {}
+			tr.start = self.Owner:GetShootPos()
+			tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 65)
+			tr.filter = self.Owner
+			tr.mask = MASK_SHOT
+			local trace = util.TraceLine(tr)
+			if (trace.Hit) then
+				// If we hit an NPC
+				if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
+					bullet = {}
+					bullet.Num    = 1
+					bullet.Src    = self.Owner:GetShootPos()
+					bullet.Dir    = self.Owner:GetAimVector()
+					bullet.Spread = Vector(0, 0, 0)
+					bullet.Tracer = 0
+					bullet.Force  = 7
+					bullet.Damage = 50
+					timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
+					self.Weapon:EmitSound("BTB_KNIFE.Stab")
+				else // If we hit something else
+					bullet = {}
+					bullet.Num    = 1
+					bullet.Src    = self.Owner:GetShootPos()
+					bullet.Dir    = self.Owner:GetAimVector()
+					bullet.Spread = Vector(0, 0, 0)
+					bullet.Tracer = 0
+					bullet.Force  = 7
+					bullet.Damage = 25
+					timer.Simple(animTime, 
+					function() 
+						self.Owner:FireBullets(bullet) 
+						util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+					end)
+					self.Weapon:EmitSound("BTB_KNIFE.Stab")
+				end
+			else // If we hit nothing
+				self.Weapon:EmitSound("BTB_KNIFE.Swing")
+			end 
 		end
 
-		self.Weapon:EmitSound("BTB_Folley.Cloth_Fast")
 		local animDur = CurTime() + self.Owner:GetViewModel():SequenceDuration() - 0.2
 		self:SetNWFloat("MeleeAnim", animDur)
 		self.Weapon:SetNextSecondaryFire(animDur)
 		self.Weapon:SetNextPrimaryFire(animDur)
 
-		local animTime = self.Owner:GetViewModel():SequenceDuration()/8
-		local tr = {}
-		tr.start = self.Owner:GetShootPos()
-		tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 50)
-		tr.filter = self.Owner
-		tr.mask = MASK_SHOT
-		local trace = util.TraceLine(tr)
-		if (trace.Hit) then
-			// If we hit an NPC
-			if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
-				bullet = {}
-				bullet.Num    = 1
-				bullet.Src    = self.Owner:GetShootPos()
-				bullet.Dir    = self.Owner:GetAimVector()
-				bullet.Spread = Vector(0, 0, 0)
-				bullet.Tracer = 0
-				bullet.Force  = 7
-				bullet.Damage = 50
-				timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-			else // If we hit something else
-				bullet = {}
-				bullet.Num    = 1
-				bullet.Src    = self.Owner:GetShootPos()
-				bullet.Dir    = self.Owner:GetAimVector()
-				bullet.Spread = Vector(0, 0, 0)
-				bullet.Tracer = 0
-				bullet.Force  = 7
-				bullet.Damage = 25
-				timer.Simple(animTime, 
-				function() 
-					self.Owner:FireBullets(bullet) 
-					util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
-				end)
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-			end
-		else // If we hit nothing
-			self.Weapon:EmitSound("BTB_KNIFE.Swing")
-		end 
 	end
 	
 	self:IronSights()
