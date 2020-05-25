@@ -598,12 +598,12 @@ function SWEP:Think()
 			self:SetNWBool("FirstHolster", false)
 			self.Owner:Give("special_btb_quickknife")
 			self.Owner:SelectWeapon("special_btb_quickknife")
-			timer.Simple(self.Owner:GetViewModel():SequenceDuration()-0.25, 
+			timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
 			function() 
 				if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end
 				self.Owner:SelectWeapon(self.Weapon:GetClass())
-				self.Owner:StripWeapon("special_btb_quickknife")
 				if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end
+				self.Owner:StripWeapon("special_btb_quickknife")
 				self:SetNWBool("FirstHolster", true)
 			end)
 		else
