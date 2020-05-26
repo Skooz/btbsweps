@@ -5,7 +5,7 @@ local RecoilMult 				= CreateClientConVar("RecoilMult", 1.00, true, false, "Reco
 
 SWEP.Category					= "BTB - Special"
 SWEP.ViewModel					= "models/weapons/btb/v_fraggrenade_smoke.mdl"
-SWEP.WorldModel					= "models/weapons/btb/w_fraggrenade_smoke.mdl"
+SWEP.WorldModel					= "models/weapons/btb/w_fraggrenade_smoke_thrown.mdl"
 SWEP.HoldType					= "melee"
 SWEP.Spawnable					= true
 SWEP.AdminSpawnable				= true

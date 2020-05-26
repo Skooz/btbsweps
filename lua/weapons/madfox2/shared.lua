@@ -438,8 +438,6 @@ function SWEP:SecondaryAttack()
 
 	local zoom = self:GetNWFloat("OwnerFOV") - 10
 
-	print(zoom)
-
 	if not self:GetNWBool("InIron") and !self.Owner:KeyDown(IN_USE) then
 		self:SetNWBool("InIron" , true)
 		self.Owner:SetFOV(zoom, 0.3 )
