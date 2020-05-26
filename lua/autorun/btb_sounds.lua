@@ -2538,6 +2538,9 @@ sound.Add({
 }) 
 util.PrecacheSound("BTB_Folley.Ironsight_Out")
 
+//
+// M4A1
+// 
 
 sound.Add({
 	name = "BTB_M4A1.Deploy",
@@ -2678,5 +2681,43 @@ sound.Add({
 	volume = 1.0,
 	soundlevel = 100,
 	sound = "weapons/btb/grenade/Frag_Throw.wav",
+}) 
+util.PrecacheSound("BTB_GRENADE.Throw")
+
+// SMOKE
+
+sound.Add({
+	name = "BTB_GRENADE_SMOKE.Explode",
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	soundlevel = 100,
+	sound = "weapons/btb/grenade_smoke/smoke_releasesmoke.wav",
+}) 
+util.PrecacheSound("BTB_GRENADE.Throw")
+
+sound.Add({
+	name = "BTB_GRENADE_SMOKE.Deploy",
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	soundlevel = 100,
+	sound = "weapons/btb/grenade_smoke/smoke_deploy.wav",
+}) 
+util.PrecacheSound("BTB_GRENADE.Throw")
+
+sound.Add({
+	name = "BTB_GRENADE_SMOKE.PullPin",
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	soundlevel = 100,
+	sound = "weapons/btb/grenade_smoke/smoke_pull_pin.wav",
+}) 
+util.PrecacheSound("BTB_GRENADE.Throw")
+
+sound.Add({
+	name = "BTB_GRENADE_SMOKE.Throw",
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	soundlevel = 100,
+	sound = "weapons/btb/grenade_smoke/smoke_throw.wav",
 }) 
 util.PrecacheSound("BTB_GRENADE.Throw")

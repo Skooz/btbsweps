@@ -6,6 +6,6 @@ SWEP.SlotPos			= 1							// Position in the slot
 SWEP.Instructions		= ""
 
 // Override this in your SWEP to set the icon in the weapon selection
-if (file.Exists("","GAME")) then
-	SWEP.WepSelectIcon	= surface.GetTextureID("")
+if (file.Exists("materials/vgui/entities/btb_knife.vmt","GAME")) then
+	SWEP.WepSelectIcon	= surface.GetTextureID("materials/vgui/entities/btb_knife.vmt")
 end

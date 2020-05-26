@@ -196,12 +196,13 @@ Think
 ---------------------------------------------------------*/
 function SWEP:Think()
 
+	self:Melee()
 	self:IronSights()
 	self:ReloadThink()
 	self:SelectFire()
-	self:HolsterWep()
 	self:Sprint()
 	self:Sway()
+	self:HolsterWep()
 
 end
 

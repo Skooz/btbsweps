@@ -19,7 +19,7 @@ SWEP.Category				= "BTB - Base"
 SWEP.Author					= "\nZookie, Marlwolf, Generic Default, Magenta, Siminov"
 SWEP.Contact				= "\nDiscord: Zookie#0210"
 SWEP.Purpose				= "BTB SWeps"
-SWEP.Instructions			= "E + R = Holster\nE + Left Mouse = Select Fire"
+SWEP.Instructions			= "E + R = Holster\nE + Left Mouse = Select Fire\nE + Right Mouse = Melee"
 
 // Settings
 SWEP.ViewModel				= Model("")
@@ -61,7 +61,7 @@ SWEP.RunSightsAng 			= Vector (0, 0, 0)
 // Shells
 SWEP.EjectsShells 			= false
 SWEP.ShellDelay 			= 0
-SWEP.ShellEffect 			= "sim_shelleject_fas_556"
+SWEP.ShellEffect 			= ""
 
 
 /*---------------------------------------------------------
@@ -118,6 +118,7 @@ function SWEP:Deploy()
 	if self.FirstDraw == true and self.Weapon:Clip1() != 0 then
 		self.FirstDraw = false
 		self.Weapon:SendWeaponAnim( self.FirstDrawAnim )
+		
 	else
 		if self.Weapon:Clip1() == 0 then	
 			self.Weapon:SendWeaponAnim( self.EmptyDrawAnim )
@@ -128,8 +129,8 @@ function SWEP:Deploy()
 	
 	// Set timers
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
+	self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration()-0.2)
+	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration()-0.2)
 
 	if self.UseIdle then timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function() if IsValid(self.Weapon) then self.Weapon:SendWeaponAnim(ACT_VM_IDLE) end end) end
 	
@@ -149,9 +150,10 @@ thereby properly swapping weapons.
 ---------------------------------------------------------*/
 function SWEP:Holster( wep )
 
+	// We rely on a first and second call; don't want prediction messing it up
 	if not IsFirstTimePredicted() then return end
 
-	if !IsValid(wep) or not wep or self:GetNWFloat("InAnim") > CurTime() then return end
+	if !IsValid(wep) or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("SwapAnim") > CurTime() then return end
 	
 	// First holster attempt - Do animation and make sure it's not interrupted
 	if self.Weapon:GetNWBool("FirstHolster") then
@@ -162,7 +164,7 @@ function SWEP:Holster( wep )
 		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
 			function()
-				if !IsValid(self.Weapon) then return end
+				if !IsValid(self.Owner) or !IsValid(self.Weapon) then return end
 				self.Weapon:SetNWBool("FirstHolster",false)
 				if (SERVER) and self.Owner:HasWeapon(wep:GetClass()) then self.Owner:SelectWeapon(wep:GetClass()) end
 			end)
@@ -184,11 +186,11 @@ HolsterWep
 function SWEP:HolsterWep()
 
 	// Don't holster if
-	if self:GetNWBool("InIron") == true or self:GetNWFloat("InAnim") > CurTime() then return end
+	if self:GetNWBool("InIron") == true or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("InAnim") > CurTime() then return end
 
 	// Holster toggle
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_RELOAD) then
-		//if not IsFirstTimePredicted() then return end
+		if not IsFirstTimePredicted() then return end
 		if !self:GetNWBool("Holster") then
 			self:SetNWBool("Holster", true)
 			self.Weapon:SendWeaponAnim(self.HolsterAnim)
@@ -313,7 +315,7 @@ function SWEP:PrimaryAttack()
 	
 	// Rate of fire - Converts RPM to delay to next show
 	self.Weapon:SetNextPrimaryFire(CurTime() + (1/(self.Primary.RPM/60)))
-	
+
 end
 
 
@@ -333,7 +335,7 @@ function SWEP:ShootFX()
 	if self.Owner:KeyDown(IN_DUCK) then
 		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat()), 0)
 	elseif self:GetNWBool("InIron") then
-		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat()), 0)
+		anglo = Angle(math.Rand(-(self.Primary.KickDown/1.5)*RecoilMult:GetFloat(),(self.Primary.KickUp/1.5)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/1.5)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/1.5)*RecoilMult:GetFloat()), 0)
 	else
 		anglo = Angle(math.Rand(-(self.Primary.KickDown)*RecoilMult:GetFloat(),(self.Primary.KickUp)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal)*RecoilMult:GetFloat()), 0)
 	end
@@ -425,11 +427,12 @@ function SWEP:SecondaryAttack()
 
 	//if not IsFirstTimePredicted() then return end
 
+	// Prevent spam - We don't actually do anything with this function
 	if (CLIENT) then return end
 
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_SPEED) then return end
 	
-	if not self:GetNWBool("InIron") then
+	if not self:GetNWBool("InIron") and !self.Owner:KeyDown(IN_USE) then
 		self:SetNWBool("InIron" , true)
 		if self.Weapon:Clip1() == 0 then
 			self.Weapon:SendWeaponAnim( self.IronInEmpty )
@@ -500,7 +503,7 @@ function SWEP:Reload()
 		end)
 	end
 	
-	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
+	self:SetNWFloat("InReload", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	
 end
 
@@ -583,17 +586,50 @@ function SWEP:Sway()
 	end
 end
 
-
-/*---------------------------------------------------------
-Think
-
-- Think is called every frame / tick
----------------------------------------------------------*/
-function SWEP:Think()
+function SWEP:Melee()
 
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK2) and CurTime() > self:GetNWFloat("MeleeAnim") and !self:GetNWBool("InIron") and !self:GetNWBool("Holster") then
 		if not IsFirstTimePredicted() then return end
-		if self.Category != "BTB - Rifles" then
+		if self.Category == "BTB - Rifles" or self.Category == "BTB - Long-rifles" and self.Weapon:GetClass() != "sniper_btb_m21" then
+			self:SendWeaponAnim(ACT_VM_HITCENTER)
+			self.Weapon:EmitSound("BTB_Folley.Cloth_Fast")
+			local animTime = self.Owner:GetViewModel():SequenceDuration()/8
+			local tr = {}
+			tr.start = self.Owner:GetShootPos()
+			tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 65)
+			tr.filter = self.Owner
+			tr.mask = MASK_SHOT
+			local trace = util.TraceLine(tr)
+			if (trace.Hit) then
+				// If we hit an NPC
+				bullet = {}
+				bullet.Num    = 1
+				bullet.Src    = self.Owner:GetShootPos()
+				bullet.Dir    = self.Owner:GetAimVector()
+				bullet.Spread = Vector(0, 0, 0)
+				bullet.Tracer = 0
+				if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
+					bullet.Force  = 7
+					bullet.Damage = 60
+					timer.Simple(animTime, 
+					function() 
+						self.Owner:FireBullets(bullet) 
+						self.Weapon:EmitSound("BTB_KNIFE.Stab")
+					end)
+				else // If we hit something else
+					bullet.Force  = 7
+					bullet.Damage = 30
+					timer.Simple(animTime, 
+					function() 
+						self.Owner:FireBullets(bullet) 
+						self.Weapon:EmitSound("BTB_KNIFE.Stab")
+						util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+					end)
+				end
+			else // If we hit nothing
+				//self.Weapon:EmitSound("BTB_KNIFE.Swing")
+			end 
+		else // If we don't have a melee animation, use the quick-knife
 			if !self:GetNWBool("FirstHolster") then return end
 			self:SetNWBool("FirstHolster", false)
 			self.Owner:Give("special_btb_quickknife")
@@ -606,59 +642,25 @@ function SWEP:Think()
 				self.Owner:StripWeapon("special_btb_quickknife")
 				self:SetNWBool("FirstHolster", true)
 			end)
-		else
-			self:SendWeaponAnim(ACT_VM_HITCENTER)
-			
-			self.Weapon:EmitSound("BTB_Folley.Cloth_Fast")
-
-			local animTime = self.Owner:GetViewModel():SequenceDuration()/8
-			local tr = {}
-			tr.start = self.Owner:GetShootPos()
-			tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 65)
-			tr.filter = self.Owner
-			tr.mask = MASK_SHOT
-			local trace = util.TraceLine(tr)
-			if (trace.Hit) then
-				// If we hit an NPC
-				if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
-					bullet = {}
-					bullet.Num    = 1
-					bullet.Src    = self.Owner:GetShootPos()
-					bullet.Dir    = self.Owner:GetAimVector()
-					bullet.Spread = Vector(0, 0, 0)
-					bullet.Tracer = 0
-					bullet.Force  = 7
-					bullet.Damage = 50
-					timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
-					self.Weapon:EmitSound("BTB_KNIFE.Stab")
-				else // If we hit something else
-					bullet = {}
-					bullet.Num    = 1
-					bullet.Src    = self.Owner:GetShootPos()
-					bullet.Dir    = self.Owner:GetAimVector()
-					bullet.Spread = Vector(0, 0, 0)
-					bullet.Tracer = 0
-					bullet.Force  = 7
-					bullet.Damage = 25
-					timer.Simple(animTime, 
-					function() 
-						self.Owner:FireBullets(bullet) 
-						util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
-					end)
-					self.Weapon:EmitSound("BTB_KNIFE.Stab")
-				end
-			else // If we hit nothing
-				self.Weapon:EmitSound("BTB_KNIFE.Swing")
-			end 
 		end
 
+		// Delays
 		local animDur = CurTime() + self.Owner:GetViewModel():SequenceDuration() - 0.2
 		self:SetNWFloat("MeleeAnim", animDur)
 		self.Weapon:SetNextSecondaryFire(animDur)
 		self.Weapon:SetNextPrimaryFire(animDur)
-
 	end
+
+end
+
+/*---------------------------------------------------------
+Think
+
+- Think is called every frame / tick
+---------------------------------------------------------*/
+function SWEP:Think()
 	
+	self:Melee()
 	self:IronSights()
 	self:SelectFire()
 	self:Sprint()

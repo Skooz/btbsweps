@@ -22,11 +22,13 @@ SWEP.HoldType				= "knife"
 SWEP.Primary.KickUp				= 3				// Maximum up recoil (rise)
 SWEP.Primary.KickDown			= 3				// Maximum down recoil (skeet)
 SWEP.Primary.KickHorizontal		= 3				// Maximum up recoil (stock)
-SWEP.Primary.Delay 			= 0.8
+
 SWEP.Primary.ClipSize		= -1					// Size of a clip
 SWEP.Primary.DefaultClip	= 1					// Default number of bullets in a clip
 SWEP.Primary.Automatic		= true				// Automatic/Semi Auto
 SWEP.Primary.Ammo			= ""
+
+SWEP.Primary.Delay 			= 0.8
 
 SWEP.Secondary.ClipSize		= -1					// Size of a clip
 SWEP.Secondary.DefaultClip	= -1					// Default number of bullets in a clip
@@ -127,11 +129,10 @@ function SWEP:PrimaryAttack()
 				bullet.Dir    = self.Owner:GetAimVector()
 				bullet.Spread = Vector(0, 0, 0)
 				bullet.Tracer = 0
-				bullet.Force  = 1
-				bullet.Damage = 60
+				bullet.Force  = 3
+				bullet.Damage = 75
 				timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
 				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-				return
 			end 
 			self.Owner:GetViewModel():SetPlaybackRate(1.5)
 			bullet = {}
@@ -140,8 +141,8 @@ function SWEP:PrimaryAttack()
 			bullet.Dir    = self.Owner:GetAimVector()
 			bullet.Spread = Vector(0, 0, 0)
 			bullet.Tracer = 0
-			bullet.Force  = 1
-			bullet.Damage = 35
+			bullet.Force  = 2
+			bullet.Damage = 50
 			timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
 			self.Weapon:EmitSound("BTB_KNIFE.Stab")
 		else // If we hit something else

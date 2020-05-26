@@ -7,6 +7,6 @@ SWEP.DrawAmmo				= true				// Should draw the default HL2 ammo counter				// Sho
 SWEP.DrawWeaponInfoBox			= true				// Should draw the weapon info box
 SWEP.BounceWeaponIcon   		= false				// Should the weapon icon bounce?
 
-if (file.Exists("materials/vgui/entities/rifle_btb_ak74m.vmt","GAME")) then
-	SWEP.WepSelectIcon	= surface.GetTextureID("vgui/entities/rifle_btb_ak74m.vmt")
+if (file.Exists("materials/vgui/entities/rifle_btb_ktr.vmt","GAME")) then
+	SWEP.WepSelectIcon	= surface.GetTextureID("vgui/entities/rifle_btb_ktr.vmt")
 end

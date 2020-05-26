@@ -4,14 +4,15 @@ SWEP.Base 						= "madfox2"
 local RecoilMult 				= CreateClientConVar("RecoilMult", 1.00, true, false, "Recoil multiplier. Do you want more, or less?")
 
 SWEP.Category					= "BTB - Special"
-SWEP.ViewModel					= "models/weapons/btb/v_fraggrenade.mdl"
-SWEP.WorldModel					= "models/weapons/btb/w_fraggrenade.mdl"
+SWEP.ViewModel					= "models/weapons/btb/v_fraggrenade_smoke.mdl"
+SWEP.WorldModel					= "models/weapons/btb/w_fraggrenade_smoke.mdl"
 SWEP.HoldType					= "melee"
 SWEP.Spawnable					= true
 SWEP.AdminSpawnable				= true
+SWEP.ViewModelFOV = 55
 
 SWEP.Primary.Sound				= Sound("")
-SWEP.Primary.Round				= ("zooks_fragnade2")
+SWEP.Primary.Round				= ("zooks_smokenade2")
 SWEP.Primary.Delay				= 1						// This is in Rounds Per Minute
 SWEP.Primary.ClipSize			= 1						// Size of a clip
 SWEP.Primary.DefaultClip		= 1

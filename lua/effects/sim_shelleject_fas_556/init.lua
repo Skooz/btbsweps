@@ -95,8 +95,7 @@ function EFFECT:Think()
 end
 
 function EFFECT:Render()
-self:SetModelScale(2)
-
+	self:SetModelScale(2)
 	self.Entity:DrawModel()
 end
 

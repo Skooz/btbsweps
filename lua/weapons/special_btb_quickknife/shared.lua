@@ -97,15 +97,11 @@ Swing 2?: ACT_VM_IDLE_3
 function SWEP:Deploy()
 	if not IsValid(self.Owner) then return end
 
-	if timer.Exists("StartIdle") then timer.Destroy("StartIdle") end
-
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
 	self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
-
 	local animTime = self.Owner:GetViewModel():SequenceDuration()/12
-
 	local tr = {}
 	tr.start = self.Owner:GetShootPos()
 	tr.endpos = self.Owner:GetShootPos() + (self.Owner:GetAimVector() * 65)
@@ -116,20 +112,6 @@ function SWEP:Deploy()
 		if not IsFirstTimePredicted() then return end
 		// If we hit an NPC
 		if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
-			if self:EntsInSphereBack(tr.endpos, 12) then
-				self.Owner:GetViewModel():SetPlaybackRate(1.5)
-				bullet = {}
-				bullet.Num    = 1
-				bullet.Src    = self.Owner:GetShootPos()
-				bullet.Dir    = self.Owner:GetAimVector()
-				bullet.Spread = Vector(0, 0, 0)
-				bullet.Tracer = 0
-				bullet.Force  = 1
-				bullet.Damage = 60
-				timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-				return
-			end 
 			self.Owner:GetViewModel():SetPlaybackRate(1.5)
 			bullet = {}
 			bullet.Num    = 1
@@ -138,7 +120,7 @@ function SWEP:Deploy()
 			bullet.Spread = Vector(0, 0, 0)
 			bullet.Tracer = 0
 			bullet.Force  = 1
-			bullet.Damage = 35
+			bullet.Damage = 50
 			timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
 			self.Weapon:EmitSound("BTB_KNIFE.Stab")
 		else // If we hit something else
@@ -164,8 +146,6 @@ function SWEP:Deploy()
 		self.Weapon:EmitSound("BTB_KNIFE.Swing")
 	end 
 
-	self.Weapon:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
-
 	// Do Recoil
 	timer.Simple(animTime, 
 	function() 
@@ -184,48 +164,11 @@ function SWEP:Deploy()
 	end)
 end
 
-/*---------------------------------------------------------
-   Name: SWEP:PrimaryAttack()
-   Desc: +attack1 has been pressed.
----------------------------------------------------------*/
+// This is quickknife, so we attack on deploy
 function SWEP:PrimaryAttack()
 end
 
-/*---------------------------------------------------------
-   Name: SWEP:EntityFaceBack
-   Desc: Is the entity face back to the player?
----------------------------------------------------------*/
-function SWEP:EntsInSphereBack(pos, range)
-
-	local ents = ents.FindInSphere(pos, range)
-
-	for k, v in pairs(ents) do
-		if v ~= self and v ~= self.Owner and (v:IsNPC() or v:IsPlayer()) and IsValid(v) and self:EntityFaceBack(v) then
-			return true
-		end
-	end
-
-	return false
-end
-
-/*---------------------------------------------------------
-   Name: SWEP:EntityFaceBack
-   Desc: Is the entity face back to the player?
----------------------------------------------------------*/
-function SWEP:EntityFaceBack(ent)
-
-	local angle = self.Owner:GetAngles().y - ent:GetAngles().y
-
-	if angle < -180 then angle = 360 + angle end
-	if angle <= 90 and angle >= -90 then return true end
-
-	return false
-end
-
-/*---------------------------------------------------------
-   Name: SWEP:SecondaryAttack()
-   Desc: +attack2 has been pressed.
----------------------------------------------------------*/
+// None of this
 function SWEP:SecondaryAttack()
 end
 
