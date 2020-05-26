@@ -144,6 +144,8 @@ FireRocket
 ---------------------------------------------------------*/
 function SWEP:FireRocket() 
 
+	local throwVelocity = 1000 
+
 	if SERVER then
 		local bullet = ents.Create(self.Primary.Round)
 		if !bullet:IsValid() then return false end
@@ -154,7 +156,7 @@ function SWEP:FireRocket()
 		bullet:Spawn()
 		bullet:Activate()
 		local phys = bullet:GetPhysicsObject()
-		phys:SetVelocity(self.Owner:GetAimVector() * 1000)
+		phys:SetVelocity(self.Owner:GetAimVector() * throwVelocity) 
 		phys:AddAngleVelocity(Vector(0, 0, 0))
 	end
 
@@ -174,6 +176,12 @@ function SWEP:FireRocket()
 
 end
 
+
+/*---------------------------------------------------------
+PrepNade
+
+- Pull the pin
+---------------------------------------------------------*/
 function SWEP:PrepNade()
 
 	if self.Owner:KeyPressed(IN_ATTACK) and self:GetNWBool("CanPrep") then
@@ -185,6 +193,12 @@ function SWEP:PrepNade()
 	end
 end
 
+
+/*---------------------------------------------------------
+ThrowNade
+
+- Throw the grenade!
+---------------------------------------------------------*/
 function SWEP:ThrowNade()
 
 	if self.Owner:KeyReleased(IN_ATTACK) and self:GetNWBool("CanThrow") then

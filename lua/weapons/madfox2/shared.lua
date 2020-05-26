@@ -24,7 +24,7 @@ SWEP.Instructions			= "E + R = Holster\nE + Left Mouse = Select Fire\nE + Right 
 // Settings
 SWEP.ViewModel				= Model("")
 SWEP.WorldModel				= Model("")
-SWEP.ViewModelFOV			= 60		
+SWEP.ViewModelFOV			= 55		
 SWEP.ViewModelFlip			= false		
 SWEP.DrawCrosshair			= false	
 SWEP.Spawnable				= false
@@ -80,7 +80,6 @@ function SWEP:Initialize()
 	// Set the hold-type
 	self:SetWeaponHoldType(self.HoldType)
 
-	
 end
 
 
