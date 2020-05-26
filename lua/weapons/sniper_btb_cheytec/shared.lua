@@ -59,6 +59,10 @@ SWEP.InsertAnim 		= ACT_VM_RELOAD
 SWEP.ReloadEndAnim 		= ACT_SHOTGUN_RELOAD_FINISH
 SWEP.ReloadStartAnim 	= ACT_SHOTGUN_RELOAD_START
 
+SWEP.EmptyReloadAnim	= ACT_VM_RELOAD
+SWEP.LastBulletAnim = ACT_VM_PRIMARYATTACK
+SWEP.LastIronBullet = ACT_VM_PRIMARYATTACK
+
 
 SWEP.Offset = {
 	Pos = 

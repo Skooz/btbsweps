@@ -58,6 +58,10 @@ SWEP.HolsterAnim 		= ACT_VM_HOLSTER
 SWEP.QuickHolsterAnim	= ACT_VM_UNDEPLOY_2
 SWEP.EmptyHolsterAnim 	= ACT_VM_HOLSTER
 
+SWEP.EmptyReloadAnim	= ACT_VM_RELOAD
+SWEP.LastBulletAnim = ACT_VM_PRIMARYATTACK
+SWEP.LastIronBullet = ACT_VM_PRIMARYATTACK
+
 SWEP.Offset = {
 	Pos = 
 	{
