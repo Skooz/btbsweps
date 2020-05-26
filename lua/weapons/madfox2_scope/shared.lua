@@ -25,8 +25,7 @@ SWEP.IronSightsPos 				= Vector (0, -110, 0)
 SWEP.IronSightsAng 				= Vector (0, 0, 0)
 
 function SWEP:Initialize()
-	
-	util.PrecacheSound(self.Primary.Sound)
+
 	if CLIENT then
 		-- We need to get these so we can scale everything to the player's current resolution.
 		local iScreenWidth = surface.ScreenWidth()
@@ -91,14 +90,14 @@ end
 
 function SWEP:SecondaryAttack()
 
-	if not IsFirstTimePredicted() or self:GetNWBool("Holster") == true or self.Owner:KeyDown(IN_SPEED) then return end
+	if not IsFirstTimePredicted() or self:GetNWBool("Holster") or self.Owner:KeyDown(IN_SPEED) then return end
 	
-	if self:GetNWBool("InIron") == false then
+	if not self:GetNWBool("InIron") then
 		self:SetNWBool("InIron" , true)
 		self:SetIronsights(true, self.Owner)
 		self.Weapon:SendWeaponAnim( self.IronInAnim	)
 		self.Owner:SetFOV( self.Secondary.ScopeZoom, 0.3 )
-	elseif self:GetNWBool("InIron") == true then
+	elseif self:GetNWBool("InIron") then
 		self:SetNWBool("InIron" , false)
 		self:SetIronsights(false, self.Owner)
 		self.Weapon:SendWeaponAnim( self.IronOutAnim )
@@ -111,17 +110,23 @@ function SWEP:SecondaryAttack()
 end
 
 
+/*---------------------------------------------------------
+Reload
+
+- Reload function for bolt-action weapons
+---------------------------------------------------------*/
 function SWEP:Reload()
 
-	if self:GetNWBool("InIron") == true and self.Weapon:Clip1() < self.Primary.ClipSize then
+	if self:GetNWBool("InIron") and self.Weapon:Clip1() < self.Primary.ClipSize then
 		self:SetNWBool("InIron" , false)
 		self:SetIronsights(false, self.Owner)
 		self.Weapon:SendWeaponAnim( self.IronOutAnim )
 		self.Owner:SetFOV( 0, 0.3 )
-	elseif self:GetNWBool("Holster") == true or CurTime() < self:GetNWFloat("InAnim") or self.Weapon:GetNWBool("Reloading") or self.Weapon:GetNWFloat("ReloadTime") > CurTime() or not IsValid(self.Weapon)  then 
+	elseif self:GetNWBool("Holster") or CurTime() < self:GetNWFloat("InAnim") or self.Weapon:GetNWBool("Reloading") or self.Weapon:GetNWFloat("ReloadTime") > CurTime() or not IsValid(self.Weapon)  then 
 		return 
 	end
 	
+	// If we're a bolt action
 	if self.BoltAction and !self.Hybrid and (self.Weapon:Clip1() < self.Primary.ClipSize and self.Owner:GetAmmoCount(self.Primary.Ammo) > 0) then
 		self.ShotgunReloading = true
 		self.Weapon:SendWeaponAnim( self.ReloadStartAnim )
@@ -136,25 +141,29 @@ function SWEP:Reload()
 			self.ShotgunReloading = false
 			self.Weapon:SetNWBool("Reloading", true)
 		end)
-	else
-		if (self.Weapon:Clip1() < self.Primary.ClipSize) and (self.Owner:GetAmmoCount(self.Primary.Ammo) > 0) then
-			self.IronSightsMode = false
-			if self.Weapon:Clip1() == 0 then
-				self.Weapon:DefaultReload(self.EmptyReloadAnim)
-			else
-				self.Weapon:DefaultReload(self.ReloadAnim)
-				timer.Simple(self.Owner:GetViewModel():SequenceDuration() + 0.01, 
-				function()
-					if (not IsValid(self.Owner) or not IsValid(self.Weapon) or not self.Owner:Alive())then return end
-					self:SetClip1( self.Primary.ClipSize + 1 )
-					self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
-				end)
-			end
+	else // If we use a clip
+		if self.Weapon:Clip1() == 0 then
+			self.Weapon:DefaultReload(self.EmptyReloadAnim)
+		elseif self.Weapon:Clip1() < self.Primary.ClipSize and self:Ammo1() > 0 then 	
+			self.Weapon:DefaultReload(self.ReloadAnim)
+			timer.Simple(self.Owner:GetViewModel():SequenceDuration() + 0.02, 
+			function()
+				if (not IsValid(self.Owner) or not IsValid(self.Weapon) or not self.Owner:Alive()) or self.Revolver then return end
+				self:SetClip1(self.Weapon:Clip1() + 1)
+				self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
+			end)
 		end
 	end
 
 end
 
+
+/*---------------------------------------------------------
+ReloadThink
+
+- Helper function for reload. Snipers require multiple
+checks and steps in order to reload.
+---------------------------------------------------------*/
 function SWEP:ReloadThink()
 	// We need to think in order to continue loading bullets
 	if self:GetNWBool("Reloading") == true and self:GetNWFloat("ReloadTime") < CurTime() then
@@ -167,7 +176,6 @@ function SWEP:ReloadThink()
 		else
 			self.Weapon:SetClip1(self.Weapon:Clip1() + 1)
 			self.Owner:RemoveAmmo(1, self.Primary.Ammo, false)
-			--	self.Owner:DoReloadEvent()
 			self.Weapon:SendWeaponAnim(self.InsertAnim)
 			self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 			self:SetNWFloat("ReloadTime", CurTime() + self.Owner:GetViewModel():SequenceDuration() + 0.02)
@@ -177,7 +185,7 @@ function SWEP:ReloadThink()
 	end
 	
 	// Interrupt reload to shoot
-	if (self.Owner:KeyDown(IN_ATTACK)) and self.Weapon:Clip1() < 10 and (self.Weapon:GetNWBool("Reloading", false) == true) then
+	if (self.Owner:KeyDown(IN_ATTACK) or self.Owner:KeyDown(IN_ATTACK2)) and self.Weapon:Clip1() < self.Primary.ClipSize and self.Weapon:GetNWBool("Reloading") then
 		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
@@ -207,14 +215,13 @@ function SWEP:Think()
 end
 
 /*---------------------------------------------------------
-IronSight
----------------------------------------------------------*/
-function SWEP:IronSight()
-end
+DrawHud
 
+- Display our scope texture
+---------------------------------------------------------*/
 function SWEP:DrawHUD()
 
-	if  self:GetNWBool("InIron") == true then
+	if self:GetNWBool("InIron") then
 	
 		if self.Secondary.UseACOG then
 			-- Draw the FAKE SCOPE THANG
@@ -297,6 +304,12 @@ function SWEP:DrawHUD()
 	end
 end
 
+
+/*---------------------------------------------------------
+AdjustMouseSensitivity
+
+- Adjust mouse sensitivity while scoped
+---------------------------------------------------------*/
 function SWEP:AdjustMouseSensitivity()
 	if self:GetNWBool("InIron") then
 		return (1/(self.Secondary.ScopeZoom/2))

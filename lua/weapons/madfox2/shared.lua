@@ -80,6 +80,7 @@ function SWEP:Initialize()
 	// Set the hold-type
 	self:SetWeaponHoldType(self.HoldType)
 
+	
 end
 
 
@@ -103,6 +104,10 @@ Deploy
 ---------------------------------------------------------*/
 function SWEP:Deploy()
 
+	// Establish default FOV for player
+	self.Owner:SetFOV( 0 , 0.3 )
+	self:SetNWFloat("OwnerFOV", self.Owner:GetFOV())
+
 	//if not IsFirstTimePredicted() then return end
 	
 	// Set variables
@@ -118,7 +123,7 @@ function SWEP:Deploy()
 	if self.FirstDraw == true and self.Weapon:Clip1() != 0 then
 		self.FirstDraw = false
 		self.Weapon:SendWeaponAnim( self.FirstDrawAnim )
-		
+		self:SetNWFloat("InMelee", CurTime() + self.Owner:GetViewModel():SequenceDuration()) // Don't allow melee on first draw
 	else
 		if self.Weapon:Clip1() == 0 then	
 			self.Weapon:SendWeaponAnim( self.EmptyDrawAnim )
@@ -431,23 +436,27 @@ function SWEP:SecondaryAttack()
 	if (CLIENT) then return end
 
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_SPEED) then return end
-	
+
+	local zoom = self:GetNWFloat("OwnerFOV") - 10
+
+	print(zoom)
+
 	if not self:GetNWBool("InIron") and !self.Owner:KeyDown(IN_USE) then
 		self:SetNWBool("InIron" , true)
+		self.Owner:SetFOV(zoom, 0.3 )
 		if self.Weapon:Clip1() == 0 then
 			self.Weapon:SendWeaponAnim( self.IronInEmpty )
 		else
 			self.Weapon:SendWeaponAnim( self.IronInAnim	)
 		end
-		self.Owner:SetFOV( self.Owner:GetFOV()-10, 0.3 )
 	elseif self:GetNWBool("InIron") then
 		self:SetNWBool("InIron" , false)
+		self.Owner:SetFOV( 0 , 0.3 )
 		if self.Weapon:Clip1() == 0 then
 			self.Weapon:SendWeaponAnim( self.IronOutEmpty )
 		else
 			self.Weapon:SendWeaponAnim( self.IronOutAnim )
 		end
-		self.Owner:SetFOV( 0 , 0.3 )
 	end
 	
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
@@ -497,7 +506,7 @@ function SWEP:Reload()
 		self.Weapon:DefaultReload(self.ReloadAnim)
 		timer.Simple(self.Owner:GetViewModel():SequenceDuration() + 0.02, 
 		function()
-			if (not IsValid(self.Owner) or not IsValid(self.Weapon) or not self.Owner:Alive()) or self.Revolver == true then return end
+			if (not IsValid(self.Owner) or not IsValid(self.Weapon) or not self.Owner:Alive()) or self.Revolver then return end
 			self:SetClip1(self.Weapon:Clip1() + 1)
 			self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
 		end)
@@ -586,10 +595,20 @@ function SWEP:Sway()
 	end
 end
 
+
+/*---------------------------------------------------------
+Melee
+
+- Called in Think.
+- Performs a close-range melee attack
+---------------------------------------------------------*/
 function SWEP:Melee()
 
-	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK2) and CurTime() > self:GetNWFloat("MeleeAnim") and !self:GetNWBool("InIron") and !self:GetNWBool("Holster") then
+	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK2) and CurTime() > self:GetNWFloat("InMelee") and !self:GetNWBool("InIron") and !self:GetNWBool("Holster") then
+	
 		if not IsFirstTimePredicted() then return end
+		
+		// Only rifles and long-rifles have a melee animation built-in
 		if self.Category == "BTB - Rifles" or self.Category == "BTB - Long-rifles" and self.Weapon:GetClass() != "sniper_btb_m21" then
 			self:SendWeaponAnim(ACT_VM_HITCENTER)
 			self.Weapon:EmitSound("BTB_Folley.Cloth_Fast")
@@ -601,13 +620,13 @@ function SWEP:Melee()
 			tr.mask = MASK_SHOT
 			local trace = util.TraceLine(tr)
 			if (trace.Hit) then
-				// If we hit an NPC
 				bullet = {}
 				bullet.Num    = 1
 				bullet.Src    = self.Owner:GetShootPos()
 				bullet.Dir    = self.Owner:GetAimVector()
 				bullet.Spread = Vector(0, 0, 0)
 				bullet.Tracer = 0
+				// If we hit an NPC
 				if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
 					bullet.Force  = 7
 					bullet.Damage = 60
@@ -629,7 +648,7 @@ function SWEP:Melee()
 			else // If we hit nothing
 				//self.Weapon:EmitSound("BTB_KNIFE.Swing")
 			end 
-		else // If we don't have a melee animation, use the quick-knife
+		else // If we don't have a melee animation (PDWs, pistols, etc), use the quick-knife
 			if !self:GetNWBool("FirstHolster") then return end
 			self:SetNWBool("FirstHolster", false)
 			self.Owner:Give("special_btb_quickknife")
@@ -646,7 +665,7 @@ function SWEP:Melee()
 
 		// Delays
 		local animDur = CurTime() + self.Owner:GetViewModel():SequenceDuration() - 0.2
-		self:SetNWFloat("MeleeAnim", animDur)
+		self:SetNWFloat("InMelee", animDur)
 		self.Weapon:SetNextSecondaryFire(animDur)
 		self.Weapon:SetNextPrimaryFire(animDur)
 	end

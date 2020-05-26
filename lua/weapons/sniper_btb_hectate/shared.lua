@@ -11,8 +11,8 @@ SWEP.AdminSpawnable			= true
 SWEP.Primary.Sound			= Sound("BTB_hectate.Fire")
 SWEP.Primary.Round			= ("zooks_12.7x99_ap")
 SWEP.Primary.RPM			= 47					// This is in Rounds Per Minute
-SWEP.Primary.ClipSize			= 10					// Size of a clip
-SWEP.Primary.DefaultClip		= 20					// Default number of bullets in a clip
+SWEP.Primary.ClipSize			= 7					// Size of a clip
+SWEP.Primary.DefaultClip		= 14					// Default number of bullets in a clip
 SWEP.Primary.Automatic			= false					// Automatic/Semi Auto
 SWEP.Primary.Ammo			= "ar2"
 

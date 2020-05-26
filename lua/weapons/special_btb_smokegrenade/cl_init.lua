@@ -8,5 +8,5 @@ SWEP.DrawWeaponInfoBox			= true				// Should draw the weapon info box
 SWEP.BounceWeaponIcon   		= false				// Should the weapon icon bounce?
 
 if (file.Exists("materials/vgui/entities/btb_smokegrenade.vmt","GAME")) then
-	SWEP.WepSelectIcon	= surface.GetTextureID("materials/vgui/entities/btb_smokegrenade.vmt")
+	SWEP.WepSelectIcon	= surface.GetTextureID("vgui/entities/btb_smokegrenade.vmt")
 end
