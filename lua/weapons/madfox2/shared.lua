@@ -6,7 +6,7 @@
 ~ Generic Default 	- The only guy who really did anything cool tbh
 ~ Zookie 			- lmao fuck this guy
 ~ Marlwolf 			- bro
-~ Magenta 			- Dude she's so angry
+~ Magenta 			- Dude she's so angry at me like why
 ~ Siminov 			- I'd suck his dick but he'd probably get to mine first
 ---------------------------------------------------------*/
 
@@ -72,7 +72,8 @@ Initialize
 ---------------------------------------------------------*/
 function SWEP:Initialize()
 		
-	// Fetch what hand-skin the player is using
+	// Fetch the hand-skin and apply it
+	// Currently has issues saving with the slider menu
 	if self.Owner:IsPlayer() and file.Exists("Plyr_BTB_Hands/"..self.Owner:UniqueID()..".txt","DATA") then
 		self.Owner:GetViewModel():SetBodygroup(1,tonumber(file.Read("Plyr_BTB_Hands/"..self.Owner:UniqueID()..".txt")))
 	end
@@ -91,7 +92,7 @@ Equip(ply)
 or picked up, the first draw animation is played.
 ---------------------------------------------------------*/
 function SWEP:Equip(ply)
-	self.FirstDraw = true
+	self:SetNWBool("FirstDraw", true)
 end
 
 
@@ -103,24 +104,11 @@ Deploy
 ---------------------------------------------------------*/
 function SWEP:Deploy()
 
-	// Establish default FOV for player
-	self.Owner:SetFOV( 0 , 0.3 )
-	self:SetNWFloat("OwnerFOV", self.Owner:GetFOV())
-
-	//if not IsFirstTimePredicted() then return end
-	
-	// Set variables
-	self:SetNWBool("FirstHolster", true)
-	self:SetIronsights(false, self.Owner)
-	self:SetNWBool("Holster", false)
-	self:SetNWBool("InIron", false)
-
-	// Reset the hold-type
-	self:SetWeaponHoldType(self.HoldType)
+	//if not IsFirstTimePredicted() then return end -- Probably don't want this because it'll just make it skip a bunch
 	
 	// Draw animations
-	if self.FirstDraw == true and self.Weapon:Clip1() != 0 then
-		self.FirstDraw = false
+	if self:GetNWBool("FirstDraw") and self.Weapon:Clip1() != 0 then
+		self:SetNWBool("FirstDraw", false)
 		self.Weapon:SendWeaponAnim( self.FirstDrawAnim )
 		self:SetNWFloat("InMelee", CurTime() + self.Owner:GetViewModel():SequenceDuration()) // Don't allow melee on first draw
 	else
@@ -130,6 +118,19 @@ function SWEP:Deploy()
 			self.Weapon:SendWeaponAnim( self.DrawAnim )
 		end
 	end
+
+	// Establish default FOV for player
+	self.Owner:SetFOV( 0 , 0.3 )
+	self:SetNWFloat("OwnerFOV", self.Owner:GetFOV())
+
+	// Set variables
+	self:SetIronsights(false, self.Owner)
+	self:SetNWBool("FirstHolster", true)
+	self:SetNWBool("Holster", false)
+	self:SetNWBool("InIron", false)
+
+	// Reset the hold-type
+	self:SetWeaponHoldType(self.HoldType)
 	
 	// Set timers
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
@@ -154,10 +155,7 @@ thereby properly swapping weapons.
 ---------------------------------------------------------*/
 function SWEP:Holster( wep )
 
-	// We rely on a first and second call; don't want prediction messing it up
-	if not IsFirstTimePredicted() then return end
-
-	if !IsValid(wep) or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("SwapAnim") > CurTime() then return end
+	if not IsFirstTimePredicted() or !IsValid(wep) or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("SwapAnim") > CurTime() then return end
 	
 	// First holster attempt - Do animation and make sure it's not interrupted
 	if self.Weapon:GetNWBool("FirstHolster") then
@@ -193,8 +191,7 @@ function SWEP:HolsterWep()
 	if self:GetNWBool("InIron") == true or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("InAnim") > CurTime() then return end
 
 	// Holster toggle
-	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_RELOAD) then
-		if not IsFirstTimePredicted() then return end
+	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_RELOAD) and IsFirstTimePredicted() then
 		if !self:GetNWBool("Holster") then
 			self:SetNWBool("Holster", true)
 			self.Weapon:SendWeaponAnim(self.HolsterAnim)
@@ -233,8 +230,7 @@ function SWEP:SelectFire()
 	if self.Category == "BTB - Pistols" or self.Category == "BTB - Special" or self.Category == "BTB - Long-rifles" then return end
 
 	// If holding use (E), and trigger (left click) is pressed
-	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK) then
-		if not IsFirstTimePredicted() then return end
+	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK) and IsFirstTimePredicted() then
 		if self.Primary.Automatic then	-- If auto, make it semi
 			self.Weapon:EmitSound(Sound("Fireselect.Switch"))
 			self.Primary.Automatic = false
@@ -407,9 +403,9 @@ function SWEP:ShootBullet( damage, num_bullets, aimcone )
 
 	local bullet = {}
 
-	bullet.Num 	= num_bullets
-	bullet.Src 	= self.Owner:GetShootPos() -- Source
-	bullet.Dir 	= self.Owner:GetAimVector() -- Dir of bullet
+	bullet.Num 		= num_bullets
+	bullet.Src 		= self.Owner:GetShootPos() -- Source
+	bullet.Dir 		= self.Owner:GetAimVector() -- Dir of bullet
 	bullet.Spread 	= Vector( aimcone, aimcone, 0 )	-- Aim Cone
 	bullet.Tracer	= 1 -- Show a tracer on every x bullets
 	bullet.Force	= (0.1*damage) -- Amount of force to give to phys objects
@@ -431,7 +427,7 @@ function SWEP:SecondaryAttack()
 
 	//if not IsFirstTimePredicted() then return end
 
-	// Prevent spam - We don't actually do anything with this function
+	// This looks nicer, and nothing needs to happen on the client anyways(?)
 	if (CLIENT) then return end
 
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_SPEED) then return end
@@ -585,7 +581,7 @@ function SWEP:Sway()
 		self.BobScale 	= 0.2
 	elseif self.Owner:KeyDown(IN_SPEED) then
 		self.SwayScale 	= 1
-		self.BobScale 	= 3
+		self.BobScale 	= 2
 	else
 		self.SwayScale 	= 1
 		self.BobScale 	= 1
@@ -601,9 +597,9 @@ Melee
 ---------------------------------------------------------*/
 function SWEP:Melee()
 
-	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK2) and CurTime() > self:GetNWFloat("InMelee") and !self:GetNWBool("InIron") and !self:GetNWBool("Holster") then
+	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK2) and IsFirstTimePredicted() then
 	
-		if not IsFirstTimePredicted() then return end
+		if CurTime() < self:GetNWFloat("InMelee") or self:GetNWBool("InIron") or self:GetNWBool("Holster") then return end
 		
 		// Only rifles and long-rifles have a melee animation built-in
 		if self.Category == "BTB - Rifles" or self.Category == "BTB - Long-rifles" and self.Weapon:GetClass() != "sniper_btb_m21" then
@@ -626,7 +622,7 @@ function SWEP:Melee()
 				// If we hit an NPC
 				if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
 					bullet.Force  = 7
-					bullet.Damage = 60
+					bullet.Damage = 75
 					timer.Simple(animTime, 
 					function() 
 						self.Owner:FireBullets(bullet) 
@@ -634,7 +630,7 @@ function SWEP:Melee()
 					end)
 				else // If we hit something else
 					bullet.Force  = 7
-					bullet.Damage = 30
+					bullet.Damage = 50
 					timer.Simple(animTime, 
 					function() 
 						self.Owner:FireBullets(bullet) 
@@ -647,16 +643,20 @@ function SWEP:Melee()
 			end 
 		else // If we don't have a melee animation (PDWs, pistols, etc), use the quick-knife
 			if !self:GetNWBool("FirstHolster") then return end
-			self:SetNWBool("FirstHolster", false)
-			self.Owner:Give("special_btb_quickknife")
-			self.Owner:SelectWeapon("special_btb_quickknife")
-			timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
+			self:SetNWBool("FirstHolster", false) 						// Disable the holster animation
+			if (SERVER) then 
+				self.Owner:Give("special_btb_quickknife") 				// Add a quick-knife to the player's inventory
+				self.Owner:SelectWeapon("special_btb_quickknife")		// Swap to the quick-knife (it attacks on Deploy())
+			end				
+			timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 	// Wait for the quick-knife animation to end
 			function() 
-				if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end
-				self.Owner:SelectWeapon(self.Weapon:GetClass())
-				if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end
-				self.Owner:StripWeapon("special_btb_quickknife")
-				self:SetNWBool("FirstHolster", true)
+				if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end // game doesn't switch back to your weapon if you've got zero ammo lmao
+				if (SERVER) then
+					self.Owner:SelectWeapon(self.Weapon:GetClass())		// Swap to the previous weapon
+					self.Owner:StripWeapon("special_btb_quickknife") 	// Remove the quick-knife
+				end
+				if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end // fucking dumb
+				self:SetNWBool("FirstHolster", true)				// Reset FirstHolster
 			end)
 		end
 

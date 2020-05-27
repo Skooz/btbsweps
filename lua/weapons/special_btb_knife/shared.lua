@@ -102,11 +102,11 @@ Swing 2?: ACT_VM_IDLE_3
 function SWEP:PrimaryAttack()
 
 	if not IsValid(self.Owner) then return end
-
 	if timer.Exists("StartIdle") then timer.Destroy("StartIdle") end
 
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
 	self.Weapon:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+	self.Owner:GetViewModel():SetPlaybackRate(1.5)
 
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 
@@ -119,52 +119,37 @@ function SWEP:PrimaryAttack()
 	tr.mask = MASK_SHOT
 	local trace = util.TraceLine(tr)
 	if (trace.Hit) then
+		bullet = {}
+		bullet.Num    = 1
+		bullet.Src    = self.Owner:GetShootPos()
+		bullet.Dir    = self.Owner:GetAimVector()
+		bullet.Spread = Vector(0, 0, 0)
+		bullet.Tracer = 0
 		// If we hit an NPC
 		if trace.Entity:IsPlayer() or string.find(trace.Entity:GetClass(),"npc") or string.find(trace.Entity:GetClass(),"prop_ragdoll") then
-			if self:EntsInSphereBack(tr.endpos, 12) then
-				self.Owner:GetViewModel():SetPlaybackRate(1.5)
-				bullet = {}
-				bullet.Num    = 1
-				bullet.Src    = self.Owner:GetShootPos()
-				bullet.Dir    = self.Owner:GetAimVector()
-				bullet.Spread = Vector(0, 0, 0)
-				bullet.Tracer = 0
+			if self:EntsInSphereBack(tr.endpos, 12) then // In the back
 				bullet.Force  = 3
+				bullet.Damage = 100
+			else // Anywhere else
+				bullet.Force  = 2
 				bullet.Damage = 75
-				timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-			end 
-			self.Owner:GetViewModel():SetPlaybackRate(1.5)
-			bullet = {}
-			bullet.Num    = 1
-			bullet.Src    = self.Owner:GetShootPos()
-			bullet.Dir    = self.Owner:GetAimVector()
-			bullet.Spread = Vector(0, 0, 0)
-			bullet.Tracer = 0
-			bullet.Force  = 2
-			bullet.Damage = 50
-			timer.Simple(animTime, function() self.Owner:FireBullets(bullet) end)
-			self.Weapon:EmitSound("BTB_KNIFE.Stab")
-		else // If we hit something else
-			self.Owner:GetViewModel():SetPlaybackRate(1.5)
-			bullet = {}
-			bullet.Num    = 1
-			bullet.Src    = self.Owner:GetShootPos()
-			bullet.Dir    = self.Owner:GetAimVector()
-			bullet.Spread = Vector(0, 0, 0)
-			bullet.Tracer = 0
-			bullet.Force  = 1
-			bullet.Damage = 25
+			end
 			timer.Simple(animTime, 
 			function() 
 				self.Owner:FireBullets(bullet) 
+				self.Weapon:EmitSound("BTB_KNIFE.Stab")
+			end)
+		else // If we hit something else
+			bullet.Force  = 2
+			bullet.Damage = 50
+			timer.Simple(animTime, 
+			function() 
+				self.Owner:FireBullets(bullet) 
+				self.Weapon:EmitSound("BTB_KNIFE.Stab")
 				util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
 			end)
-			self.Weapon:EmitSound("BTB_KNIFE.Stab")
 		end
 	else // If we hit nothing
-		if not IsFirstTimePredicted() then return end
-		self.Owner:GetViewModel():SetPlaybackRate(1.5)
 		self.Weapon:EmitSound("BTB_KNIFE.Swing")
 	end 
 

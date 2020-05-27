@@ -36,35 +36,8 @@ Throw: ACT_VM_THROW
 Prone Move: ACT_VM_IDLE_3
 */
 
-/*
-SWEP.DrawAnim 			= ACT_VM_DRAW
-SWEP.FirstDrawAnim 		= ACT_VM_DRAW_EMPTY
-SWEP.EmptyDrawAnim 		= ACT_VM_DRAW
-
-SWEP.PrimAttackAnim 	= ACT_VM_PRIMARYATTACK
-SWEP.DryFireAnim 		= ACT_VM_PRIMARYATTACK
-SWEP.LastIronBullet		= ACT_VM_SECONDARYATTACK
-SWEP.LastBulletAnim		= ACT_VM_PRIMARYATTACK
-SWEP.IronFireAnim 		= ACT_VM_SECONDARYATTACK
-SWEP.IronDryFireAnim	= ACT_VM_SECONDARYATTACK
-
-SWEP.IronInAnim 		= ACT_VM_DEPLOY
-SWEP.IronOutAnim 		= ACT_VM_UNDEPLOY
-SWEP.IronInEmpty		= ACT_VM_DEPLOY
-SWEP.IronOutEmpty		= ACT_VM_UNDEPLOY
-
-SWEP.ReloadAnim 		= ACT_VM_RELOAD
-SWEP.EmptyReloadAnim 	= ACT_VM_RELOAD_EMPTY
-
-SWEP.IdleAnim 			= ACT_VM_IDLE
-SWEP.EmptyIdleAnim 		= ACT_VM_IDLE
-
-
-SWEP.QuickHolsterAnim	= ACT_VM_UNDEPLOY_2
-SWEP.EmptyHolsterAnim 	= ACT_VM_HOLSTER
-*/
-
 SWEP.HolsterAnim 		= ACT_VM_HOLSTER
+SWEP.DrawAnim 			=  ACT_VM_DRAW
 
 SWEP.Offset = {
 	Pos = 
@@ -85,95 +58,39 @@ SWEP.Offset = {
 /*---------------------------------------------------------
 Deploy
 
-- Deploy\draw the weapon. 
-- Do deploy animation and some variable setup here.
+- Deploy and reload the grenade
+- Strip it if we're out of grenades
 ---------------------------------------------------------*/
 function SWEP:Deploy()
 
-	if not IsFirstTimePredicted() then return end
-
-	// Strip the grenade if we've got no more grenades
+	// You can't have a grenade in your hand if you have no grenades. Big thonk.
 	if self.Owner:GetAmmoCount(self:GetPrimaryAmmoType()) <= 0 and self.Weapon:Clip1() <= 0 then
 		self.Owner:StripWeapon(self:GetClass())
 		return false
 	end
 
+	// Draw animations
+	if self.Weapon:Clip1() <= 0 then 
+		self.Weapon:DefaultReload(ACT_VM_DRAW) // Reload here! Makes it easy.
+	else 
+		self.Weapon:SendWeaponAnim(ACT_VM_DRAW) // Just draw.
+	end
+	
 	// Set variables
 	self:SetNWBool("CanPrep", true)
 	self:SetNWBool("FirstHolster", true)
 	self:SetIronsights(false, self.Owner)
 	self:SetNWBool("Holster", false)
 	self:SetNWBool("InIron", false)
-	
-	// Draw animations
-	if self.Weapon:Clip1() <= 0 then
-		self.Weapon:DefaultReload(ACT_VM_DRAW)
-	else
-		self.Weapon:SendWeaponAnim( ACT_VM_DRAW )
-	end
-	
+
 	// Set timers
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	
+
 	// Deploy succesful
 	return true
 	
-end
-
-/*---------------------------------------------------------
-   Name: SWEP:PrimaryAttack()
-   Desc: +attack1 has been pressed.
----------------------------------------------------------*/
-function SWEP:PrimaryAttack()
-end
-
-/*---------------------------------------------------------
-   Name: SWEP:SecondaryAttack()
-   Desc: +attack2 has been pressed.
----------------------------------------------------------*/
-function SWEP:SecondaryAttack()
-end
-
-/*---------------------------------------------------------
-FireRocket
-
-- Throw our grenade
-- This is lazy, I know.
----------------------------------------------------------*/
-function SWEP:FireRocket() 
-
-	local throwVelocity = 1000 
-
-	if SERVER then
-		local bullet = ents.Create(self.Primary.Round)
-		if !bullet:IsValid() then return false end
-		bullet:SetVelocity(self.Owner:GetAimVector() * 50)
-		bullet:SetAngles(self.Owner:GetAimVector():Angle()+Angle(90,0,0))
-		bullet:SetPos(self.Owner:GetShootPos())
-		bullet:SetOwner(self.Owner)
-		bullet:Spawn()
-		bullet:Activate()
-		local phys = bullet:GetPhysicsObject()
-		phys:SetVelocity(self.Owner:GetAimVector() * throwVelocity) 
-		phys:AddAngleVelocity(Vector(0, 0, 0))
-	end
-
-	// Recoil
-	-- Calculate angles
-	local anglo
-	if self.Owner:KeyDown(IN_DUCK) then
-		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat()), 0)
-	else
-		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat()), 0)
-	end
-	-- Do recoil with angles
-	self.Owner:ViewPunch(anglo)
-	if (game.SinglePlayer() and SERVER) or (not game.SinglePlayer() and CLIENT) then
-		self.Owner:SetEyeAngles(self.Owner:EyeAngles() - anglo)
-	end
-
 end
 
 
@@ -231,11 +148,73 @@ function SWEP:ThrowNade()
 
 end
 
+
+/*---------------------------------------------------------
+FireRocket
+
+- Spawn our grenade
+---------------------------------------------------------*/
+function SWEP:FireRocket() 
+
+	// How fast we throwin'?
+	local throwVelocity = 1000 
+
+	// Make the entity
+	if SERVER then
+		local grenade = ents.Create(self.Primary.Round)
+		if !grenade:IsValid() then return false end
+		grenade:SetVelocity(self.Owner:GetAimVector() * 50)
+		grenade:SetAngles(self.Owner:GetAimVector():Angle()+Angle(90,0,0))
+		grenade:SetPos(self.Owner:GetShootPos())
+		grenade:SetOwner(self.Owner)
+		grenade:Spawn()
+		grenade:Activate()
+		local phys = grenade:GetPhysicsObject()
+		phys:SetVelocity(self.Owner:GetAimVector() * throwVelocity) 
+		phys:AddAngleVelocity(Vector(0, 0, 0))
+	end
+
+	// Recoil
+	-- Calculate angles
+	local anglo
+	if self.Owner:KeyDown(IN_DUCK) then
+		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/4)*RecoilMult:GetFloat()), 0)
+	else
+		anglo = Angle(math.Rand(-(self.Primary.KickDown/2)*RecoilMult:GetFloat(),(self.Primary.KickUp/2)*RecoilMult:GetFloat()), math.Rand(-(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat(),(self.Primary.KickHorizontal/2)*RecoilMult:GetFloat()), 0)
+	end
+	-- Do recoil with angles
+	self.Owner:ViewPunch(anglo)
+	if (game.SinglePlayer() and SERVER) or (not game.SinglePlayer() and CLIENT) then
+		self.Owner:SetEyeAngles(self.Owner:EyeAngles() - anglo)
+	end
+
+end
+
+
 function SWEP:Think()
 
 	self:PrepNade()
 	self:ThrowNade()
+	self:Sway()
+	
+	// TODO: Logic for these
+	-- self:Melee()
+	-- self:HolsterWep()
 
+	// Unused
+	-- self:IronSights()
+	-- self:SelectFire()
+	-- self:Sprint()
+
+end
+
+
+// Unused functions - Cancel out stuff we don't want from the base
+
+function SWEP:PrimaryAttack()
+end
+
+function SWEP:SecondaryAttack()
 end
 
 function SWEP:Reload()
