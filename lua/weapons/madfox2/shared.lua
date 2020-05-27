@@ -137,7 +137,14 @@ function SWEP:Deploy()
 	self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration()-0.2)
 	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration()-0.2)
 
-	if self.UseIdle then timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function() if IsValid(self.Weapon) then self.Weapon:SendWeaponAnim(ACT_VM_IDLE) end end) end
+	if self.UseIdle then 
+		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
+		function() 
+			if IsValid(self.Weapon) then 
+				self.Weapon:SendWeaponAnim(ACT_VM_IDLE) 
+			end 
+		end) 
+	end
 	
 	// Deploy succesful
 	return true

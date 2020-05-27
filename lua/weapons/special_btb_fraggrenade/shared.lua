@@ -101,13 +101,13 @@ PrepNade
 ---------------------------------------------------------*/
 function SWEP:PrepNade()
 
-	if self.Owner:KeyPressed(IN_ATTACK) and self:GetNWBool("CanPrep") then
-		if not IsFirstTimePredicted() then return end
+	if self.Owner:KeyPressed(IN_ATTACK) and self:GetNWBool("CanPrep") and IsFirstTimePredicted() then
 		self:SendWeaponAnim(ACT_VM_HAULBACK)
 		self:SetNWFloat("PrepAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self:SetNWBool("CanPrep", false)
 		self:SetNWBool("CanThrow", true)
 	end
+
 end
 
 
@@ -118,8 +118,8 @@ ThrowNade
 ---------------------------------------------------------*/
 function SWEP:ThrowNade()
 
-	if self.Owner:KeyReleased(IN_ATTACK) and self:GetNWBool("CanThrow") then
-		if not IsFirstTimePredicted() or not IsValid(self.Owner) then return end
+	if self.Owner:KeyReleased(IN_ATTACK) and self:GetNWBool("CanThrow") and IsFirstTimePredicted() then
+		if !IsValid(self.Owner) then return end
 		self.Owner:SetAnimation(PLAYER_ATTACK1)
 		self:TakePrimaryAmmo(1)
 		if self:GetNWFloat("PrepAnim") > CurTime() then
@@ -130,8 +130,10 @@ function SWEP:ThrowNade()
 				self:FireRocket()
 				self:SetNWFloat("ThrowAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 				timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
-				function() 
-					self:Deploy()
+				function()
+					if IsValid(self) then
+						self:Deploy()
+					end
 				end)
 			end)
 		else
@@ -141,7 +143,9 @@ function SWEP:ThrowNade()
 			self:SetNWFloat("ThrowAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 			timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
 			function() 
-				self:Deploy()
+				if IsValid(self) then
+					self:Deploy()
+				end
 			end)
 		end
 	end

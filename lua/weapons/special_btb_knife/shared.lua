@@ -101,7 +101,7 @@ Swing 2?: ACT_VM_IDLE_3
 ---------------------------------------------------------*/
 function SWEP:PrimaryAttack()
 
-	if not IsValid(self.Owner) then return end
+	if !IsValid(self.Owner) or !IsValid(self.Weapon) then return end
 	if timer.Exists("StartIdle") then timer.Destroy("StartIdle") end
 
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
@@ -135,18 +135,22 @@ function SWEP:PrimaryAttack()
 				bullet.Damage = 75
 			end
 			timer.Simple(animTime, 
-			function() 
-				self.Owner:FireBullets(bullet) 
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
+			function()
+				if IsValid(self.Owner) and IsValid(self.Weapon) then
+					self.Owner:FireBullets(bullet) 
+					self.Weapon:EmitSound("BTB_KNIFE.Stab")
+				end
 			end)
 		else // If we hit something else
 			bullet.Force  = 2
 			bullet.Damage = 50
 			timer.Simple(animTime, 
 			function() 
-				self.Owner:FireBullets(bullet) 
-				self.Weapon:EmitSound("BTB_KNIFE.Stab")
-				util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+				if IsValid(self.Owner) and IsValid(self.Weapon) then
+					self.Owner:FireBullets(bullet) 
+					self.Weapon:EmitSound("BTB_KNIFE.Stab")
+					util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+				end
 			end)
 		end
 	else // If we hit nothing
@@ -173,7 +177,12 @@ function SWEP:PrimaryAttack()
 	end)
 
 	// Start idle animation
-	timer.Create("StartIdle", self.Owner:GetViewModel():SequenceDuration() - 0.7, 1, function() self:SendWeaponAnim(ACT_VM_IDLE) end)
+	timer.Create("StartIdle", self.Owner:GetViewModel():SequenceDuration() - 0.7, 1, 
+	function() 
+		if IsValid(self.Weapon) then 
+			self.Weapon:SendWeaponAnim(ACT_VM_IDLE) 
+		end 
+	end)
 end
 
 /*---------------------------------------------------------
@@ -191,6 +200,7 @@ function SWEP:EntsInSphereBack(pos, range)
 	end
 
 	return false
+
 end
 
 /*---------------------------------------------------------
@@ -205,6 +215,7 @@ function SWEP:EntityFaceBack(ent)
 	if angle <= 90 and angle >= -90 then return true end
 
 	return false
+
 end
 
 /*---------------------------------------------------------

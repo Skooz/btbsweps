@@ -13,7 +13,7 @@ SWEP.Primary.Round				= ("zooks_9x19_350")
 SWEP.Primary.RPM				= 700						// This is in Rounds Per Minute
 SWEP.Primary.ClipSize			= 17						// Size of a clip
 SWEP.Primary.DefaultClip		= 34
-SWEP.Primary.Automatic			= false						// Automatic/Semi Auto
+SWEP.Primary.Automatic			= true						// Automatic/Semi Auto
 SWEP.Primary.Ammo				= "pistol"
 
 SWEP.Primary.KickUp				= 2					// Maximum up recoil (rise)
