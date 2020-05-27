@@ -187,10 +187,8 @@ HolsterWep
 ---------------------------------------------------------*/
 function SWEP:HolsterWep()
 
-	// Don't holster if
 	if self:GetNWBool("InIron") == true or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("InAnim") > CurTime() then return end
 
-	// Holster toggle
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_RELOAD) and IsFirstTimePredicted() then
 		if !self:GetNWBool("Holster") then
 			self:SetNWBool("Holster", true)
@@ -214,7 +212,6 @@ function SWEP:HolsterWep()
 		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	end
 	
-	
 end
 
 
@@ -227,15 +224,15 @@ SelectFire
 ---------------------------------------------------------*/
 function SWEP:SelectFire()
 	
+	// Go by category, cuz why not?
 	if self.Category == "BTB - Pistols" or self.Category == "BTB - Special" or self.Category == "BTB - Long-rifles" then return end
 
-	// If holding use (E), and trigger (left click) is pressed
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_ATTACK) and IsFirstTimePredicted() then
-		if self.Primary.Automatic then	-- If auto, make it semi
+		if self.Primary.Automatic then
 			self.Weapon:EmitSound(Sound("Fireselect.Switch"))
 			self.Primary.Automatic = false
 			if (SERVER) then self.Owner:PrintMessage(HUD_PRINTTALK, "Semi") end
-		elseif not self.Primary.Automatic then	-- If semi, make it auto
+		elseif not self.Primary.Automatic then
 			self.Weapon:EmitSound(Sound("Fireselect.Switch"))
 			self.Primary.Automatic = true
 			if (SERVER) then self.Owner:PrintMessage(HUD_PRINTTALK, "Auto") end
@@ -257,7 +254,7 @@ function SWEP:CanPrimaryAttack()
 	if self:GetNWBool("Holster") or self.Owner:KeyDown(IN_USE) or self.Owner:KeyDown(IN_SPEED) then 
 		return false
 	elseif ( self.Weapon:Clip1() <= 0 ) or self.Owner:WaterLevel() >= 3 then
-		self:EmitSound( "Dry.Pistol" )
+		self:EmitSound("Dry.Pistol")
 		self:SetNextPrimaryFire( CurTime() + 0.5 )
 		return false
 	else
@@ -287,7 +284,7 @@ function SWEP:PrimaryAttack()
 	self.Weapon:TakePrimaryAmmo(1)
 	
 	// Animation handling
-	if self.BoltAction then
+	if self.BoltAction then // Bolt-Actions
 		self:SendWeaponAnim(ACT_VM_SECONDARYATTACK)
 		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
@@ -295,7 +292,7 @@ function SWEP:PrimaryAttack()
 			self:SendWeaponAnim( ACT_SHOTGUN_PUMP ) 
 			self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())	
 		end)
-	else
+	else // Regular weapons
 		if self:GetNWBool("InIron") then
 			if self.Weapon:Clip1() == 0 then
 				self.Weapon:SendWeaponAnim( self.LastIronBullet )
@@ -469,7 +466,7 @@ for the hold/toggle ironsights setting.
 function SWEP:IronSights()
 
 	// By default, SecondaryAttack is only called when secondary attack (mouse 2) is PRESSED
-	// This allows the ironsights to be a "hold", instead of a toggle.
+	// This allows the ironsights to be a "hold", instead of a toggle, by calling SecondaryAttack again whenever mouse 2 is released.
 	if not ToggleSights:GetBool() and self.Owner:KeyReleased(IN_ATTACK2) and self:GetNWBool("InIron") and IsFirstTimePredicted() then
 		self:SecondaryAttack()
 	end
@@ -522,7 +519,7 @@ function SWEP:Sprint()
 	if self.Owner:KeyDown(IN_SPEED) then
 		// Disable ironsights; this is done here because SecondaryAttack cannot be called while sprinting, so we do it manually.
 		// Yeah, it's fucking stupid, eat my ass
-		if self:GetNWBool("InIron") == true then 
+		if self:GetNWBool("InIron") then 
 			self.Owner:SetFOV( 0, 0.3 )
 			self:SetNWBool("InIron" , false)
 			if self.Weapon:Clip1() == 0 then
@@ -576,7 +573,7 @@ etc.
 ---------------------------------------------------------*/
 function SWEP:Sway()
 	// Called in Think
-	if self:GetNWFloat("InIron") == true then
+	if self:GetNWBool("InIron") then
 		self.SwayScale 	= 0.2
 		self.BobScale 	= 0.2
 	elseif self.Owner:KeyDown(IN_SPEED) then
@@ -641,7 +638,7 @@ function SWEP:Melee()
 			else // If we hit nothing
 				//self.Weapon:EmitSound("BTB_KNIFE.Swing")
 			end 
-		else // If we don't have a melee animation (PDWs, pistols, etc), use the quick-knife
+		else // If we don't have a melee animation, use the quick-knife
 			if !self:GetNWBool("FirstHolster") then return end
 			self:SetNWBool("FirstHolster", false) 						// Disable the holster animation
 			if (SERVER) then 
