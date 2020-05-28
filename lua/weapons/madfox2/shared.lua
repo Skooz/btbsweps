@@ -48,7 +48,7 @@ SWEP.Secondary.ClipSize		= 0					// Size of a clip
 SWEP.Secondary.DefaultClip	= 0					// Default number of bullets in a clip
 SWEP.Secondary.Automatic	= false					// Automatic/Semi Auto
 SWEP.Secondary.Ammo			= "none"
-SWEP.Secondary.IronFOV		= 65					// UNUSED
+SWEP.Secondary.IronFOV		= 65	// UNUSED
 
 // Deprecated - Just a helper (for now) for this addon
 SWEP.IronSightsPos 			= Vector (0, 0, 0)
@@ -162,7 +162,7 @@ thereby properly swapping weapons.
 ---------------------------------------------------------*/
 function SWEP:Holster( wep )
 
-	if not IsFirstTimePredicted() or !IsValid(wep) or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("SwapAnim") > CurTime() then return end
+	if !IsFirstTimePredicted() or !IsValid(wep) or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("SwapAnim") > CurTime() then return end
 	
 	// First holster attempt - Do animation and make sure it's not interrupted
 	if self.Weapon:GetNWBool("FirstHolster") then
@@ -191,15 +191,15 @@ HolsterWep
 
 - Called in Think
 - Allows for a manual holster. Adjusts holdtypes too.
-- Mostly a roleplaying feature. Has no practical use.
+- Mostly a roleplaying feature. 
 ---------------------------------------------------------*/
 function SWEP:HolsterWep()
 
-	if self:GetNWBool("InIron") == true or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("InAnim") > CurTime() then return end
-
 	if self.Owner:KeyDown(IN_USE) and self.Owner:KeyPressed(IN_RELOAD) and IsFirstTimePredicted() then
+		if self:GetNWBool("InIron") or self:GetNWFloat("InReload") > CurTime() or self:GetNWFloat("InAnim") > CurTime() then return end
 		if !self:GetNWBool("Holster") then
 			self:SetNWBool("Holster", true)
+			self:SetNWBool("FirstHolster", false)
 			self.Weapon:SendWeaponAnim(self.HolsterAnim)
 			self.Weapon:EmitSound(Sound("Holster.Wep"))
 			if self.HoldType == "pistol" then
@@ -209,6 +209,7 @@ function SWEP:HolsterWep()
 			end
 		elseif self:GetNWBool("Holster") then
 			self:SetNWBool("Holster", false)
+			self:SetNWBool("FirstHolster", true)
 			if self.Weapon:Clip1() == 0 then
 				self.Weapon:SendWeaponAnim( self.EmptyDrawAnim )
 			else
@@ -334,7 +335,7 @@ ShootFX
 ---------------------------------------------------------*/
 function SWEP:ShootFX()
 	
-	if not IsFirstTimePredicted() then return end
+	if !IsFirstTimePredicted() then return end
 
 	// Recoil
 	-- Calculate angles
@@ -356,11 +357,11 @@ function SWEP:ShootFX()
 	local fx = EffectData()
 	if self.EjectsShells then
 		timer.Simple(self.ShellDelay, function()
-			if IsValid(self.Owner) and IsValid(self.Weapon) then
+			if IsValid(self.Owner) and IsValid(self.Weapon) and IsFirstTimePredicted() then
 				fx:SetEntity(self.Weapon)
 				fx:SetNormal(self.Owner:GetAimVector())
 				fx:SetAttachment("2")
-				util.Effect(self.ShellEffect,fx)
+				if CLIENT then util.Effect(self.ShellEffect,fx) end
 			end
 		end)
 	end
@@ -528,10 +529,9 @@ vectors. Could be pasta'd as ironsights code, but we use
 animations in this pack
 ---------------------------------------------------------*/
 function SWEP:Sprint()
+
 	if self.Owner:KeyDown(IN_SPEED) then
-		// Disable ironsights; this is done here because SecondaryAttack cannot be called while sprinting, so we do it manually.
-		// Yeah, it's fucking stupid, eat my ass
-		if self:GetNWBool("InIron") then 
+		if self:GetNWBool("InIron") then // Disable ironsights; this is done here because SecondaryAttack cannot be called while sprinting, so we do it manually.
 			self.Owner:SetFOV( 0, 0.3 )
 			self:SetNWBool("InIron" , false)
 			if self.Weapon:Clip1() == 0 then
@@ -540,8 +540,7 @@ function SWEP:Sprint()
 				self.Weapon:SendWeaponAnim( self.IronOutAnim )
 			end
 		end
-		// Set a new hold-type while sprinting
-		if self.HoldType == "pistol" or self.HoldType == "revolver" then
+		if self.HoldType == "pistol" or self.HoldType == "revolver" then // Set a new hold-type while sprinting
 			self:SetWeaponHoldType("normal")
 		else
 			self:SetWeaponHoldType("passive")
@@ -551,8 +550,8 @@ function SWEP:Sprint()
 		self.IronSightsAng = self.RunSightsAng
 		self:SetIronsights(true, self.Owner)
 	end				
-	// Reset things after sprinting
-	if self.Owner:KeyReleased (IN_SPEED) then
+
+	if self.Owner:KeyReleased(IN_SPEED) then // Reset things after sprinting
 		self:SetWeaponHoldType(self.HoldType) 
 		self:SetIronsights(false, self.Owner)
 		if self.Owner:KeyDown(IN_ATTACK2) then -- Let player go back into ironsights
@@ -603,6 +602,8 @@ Melee
 
 - Called in Think.
 - Performs a close-range melee attack
+- Make use of built-in melee animation on the viewmodel
+- If no animation, hotswap to a quick-knife
 ---------------------------------------------------------*/
 function SWEP:Melee()
 
@@ -663,13 +664,19 @@ function SWEP:Melee()
 			end				
 			timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 	// Wait for the quick-knife animation to end
 			function() 
-				if IsValid(self.Owner) and IsValid(self.Weapon) then
-					if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end // game doesn't switch back to your weapon if you've got zero ammo lmao
+				if IsValid(self.Owner) and IsValid(self.Weapon) then 
+					if self:Ammo1() == 0 and self:Clip1() == 0 then // game doesn't switch back to your weapon if you've got zero ammo lmao
+						self.Owner:GiveAmmo(1,self.Primary.Ammo,true) 
+						self:SetNWBool("haha", true) 
+					end 
 					if (SERVER) then
 						self.Owner:SelectWeapon(self.Weapon:GetClass())		// Swap to the previous weapon
 						self.Owner:StripWeapon("special_btb_quickknife") 	// Remove the quick-knife
 					end
-					if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end // fucking dumb
+					if self:GetNWBool("haha") then // fucking dumb
+						self.Owner:RemoveAmmo(1,self.Primary.Ammo) 
+						self:SetNWBool("haha", false) 
+					end 
 					self:SetNWBool("FirstHolster", true)				// Reset FirstHolster
 				end
 			end)

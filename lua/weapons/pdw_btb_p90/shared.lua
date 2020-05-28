@@ -58,9 +58,9 @@ SWEP.EmptyHolsterAnim 	= ACT_VM_HOLSTER
 SWEP.Offset = {
 	Pos = 
 	{
-	Up = 1.2,  		-- Z Axis	(Up/Down)
+	Up = 2,  		-- Z Axis	(Up/Down)
 	Right = 1, 		-- X Axis	(Left/Right)
-	Forward = 2.5, 	-- Y Axis	(Back/Forward)
+	Forward = 1.5, 	-- Y Axis	(Back/Forward)
 	},
 	Ang = 
 	{

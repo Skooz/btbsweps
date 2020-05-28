@@ -16,9 +16,9 @@ SWEP.Primary.DefaultClip		= 24
 SWEP.Primary.Automatic			= false						// Automatic/Semi Auto
 SWEP.Primary.Ammo				= "357"
 
-SWEP.Primary.KickUp				= 2					// Maximum up recoil (rise)
-SWEP.Primary.KickDown			= -2					// Maximum down recoil (skeet)
-SWEP.Primary.KickHorizontal		= 1					// Maximum up recoil (stock)
+SWEP.Primary.KickUp				= 1					// Maximum up recoil (rise)
+SWEP.Primary.KickDown			= -1					// Maximum down recoil (skeet)
+SWEP.Primary.KickHorizontal		= 0.5					// Maximum up recoil (stock)
 
 SWEP.EjectsShells 		= true
 SWEP.ShellDelay 		= 0

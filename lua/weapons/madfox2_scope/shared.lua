@@ -86,6 +86,9 @@ function SWEP:Initialize()
 		self.FilterTable.h = iScreenHeight/self.FilterTable.hdivider
 	end
 	
+	// Reset the hold-type
+	self:SetWeaponHoldType(self.HoldType)
+
 end
 
 function SWEP:SecondaryAttack()

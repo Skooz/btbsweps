@@ -65,7 +65,7 @@ SWEP.Offset = {
 	Ang = 
 	{
 	Up = -90,		-- Rotate	(Left/Right)
-	Right = 8,		-- Rolling``	(Back/Forth)
+	Right = 4,		-- Rolling``	(Back/Forth)
 	Forward = 0,	-- Rolling	(Left/Right)
 	}
 }
