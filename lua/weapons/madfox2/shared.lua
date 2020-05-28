@@ -173,9 +173,10 @@ function SWEP:Holster( wep )
 		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
 			function()
-				if !IsValid(self.Owner) or !IsValid(self.Weapon) then return end
-				self.Weapon:SetNWBool("FirstHolster",false)
-				if (SERVER) and self.Owner:HasWeapon(wep:GetClass()) then self.Owner:SelectWeapon(wep:GetClass()) end
+				if IsValid(self.Owner) and IsValid(self.Weapon) then
+					self.Weapon:SetNWBool("FirstHolster",false)
+					if (SERVER) and self.Owner:HasWeapon(wep:GetClass()) then self.Owner:SelectWeapon(wep:GetClass()) end
+				end
 			end)
 		return false // Return false on the first call so we can do the animation
 	else // Second holster attempt
@@ -633,17 +634,21 @@ function SWEP:Melee()
 					bullet.Damage = 75
 					timer.Simple(animTime, 
 					function() 
-						self.Owner:FireBullets(bullet) 
-						self.Weapon:EmitSound("BTB_KNIFE.Stab")
+						if IsValid(self.Owner) and IsValid(self.Weapon) then
+							self.Owner:FireBullets(bullet) 
+							self.Weapon:EmitSound("BTB_KNIFE.Stab")
+						end
 					end)
 				else // If we hit something else
 					bullet.Force  = 7
 					bullet.Damage = 50
 					timer.Simple(animTime, 
 					function() 
-						self.Owner:FireBullets(bullet) 
-						self.Weapon:EmitSound("BTB_KNIFE.Stab")
-						util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+						if IsValid(self.Owner) and IsValid(self.Weapon) then
+							self.Owner:FireBullets(bullet) 
+							self.Weapon:EmitSound("BTB_KNIFE.Stab")
+							util.Decal("ManhackCut", trace.HitPos + trace.HitNormal, trace.HitPos - trace.HitNormal)
+						end
 					end)
 				end
 			else // If we hit nothing
@@ -658,13 +663,15 @@ function SWEP:Melee()
 			end				
 			timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 	// Wait for the quick-knife animation to end
 			function() 
-				if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end // game doesn't switch back to your weapon if you've got zero ammo lmao
-				if (SERVER) then
-					self.Owner:SelectWeapon(self.Weapon:GetClass())		// Swap to the previous weapon
-					self.Owner:StripWeapon("special_btb_quickknife") 	// Remove the quick-knife
+				if IsValid(self.Owner) and IsValid(self.Weapon) then
+					if self:Ammo1() == 0 and self:Clip1() == 0 then self.Owner:GiveAmmo(1,self.Primary.Ammo,true) self:SetNWBool("haha", true) end // game doesn't switch back to your weapon if you've got zero ammo lmao
+					if (SERVER) then
+						self.Owner:SelectWeapon(self.Weapon:GetClass())		// Swap to the previous weapon
+						self.Owner:StripWeapon("special_btb_quickknife") 	// Remove the quick-knife
+					end
+					if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end // fucking dumb
+					self:SetNWBool("FirstHolster", true)				// Reset FirstHolster
 				end
-				if self:GetNWBool("haha") then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetNWBool("haha", false) end // fucking dumb
-				self:SetNWBool("FirstHolster", true)				// Reset FirstHolster
 			end)
 		end
 
