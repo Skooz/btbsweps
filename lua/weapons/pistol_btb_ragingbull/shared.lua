@@ -16,9 +16,9 @@ SWEP.Primary.DefaultClip		= 12
 SWEP.Primary.Automatic			= false						// Automatic/Semi Auto
 SWEP.Primary.Ammo				= "357"
 
-SWEP.Primary.KickUp				= 5					// Maximum up recoil (rise)
-SWEP.Primary.KickDown			= -5					// Maximum down recoil (skeet)
-SWEP.Primary.KickHorizontal		= 3 				// Maximum up recoil (stock)
+SWEP.Primary.KickUp				= 4.5					// Maximum up recoil (rise)
+SWEP.Primary.KickDown			= -4.5					// Maximum down recoil (skeet)
+SWEP.Primary.KickHorizontal		= 0 				// Maximum up recoil (stock)
 
 SWEP.EjectsShells = false
 SWEP.Revolver = true -- So we don't get an extra bullet when reloading

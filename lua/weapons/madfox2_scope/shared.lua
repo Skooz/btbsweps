@@ -137,9 +137,10 @@ function SWEP:Reload()
 		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function()
-			if not IsValid(self.Weapon) then return end
-			self.ShotgunReloading = false
-			self.Weapon:SetNWBool("Reloading", true)
+			if IsValid(self.Weapon) then
+				self.ShotgunReloading = false
+				self.Weapon:SetNWBool("Reloading", true)
+			end
 		end)
 	else // If we use a clip
 		if self.Weapon:Clip1() == 0 then
@@ -148,9 +149,10 @@ function SWEP:Reload()
 			self.Weapon:DefaultReload(self.ReloadAnim)
 			timer.Simple(self.Owner:GetViewModel():SequenceDuration() + 0.02, 
 			function()
-				if (not IsValid(self.Owner) or not IsValid(self.Weapon) or not self.Owner:Alive()) or self.Revolver then return end
-				self:SetClip1(self.Weapon:Clip1() + 1)
-				self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
+				if IsValid(self.Owner) and IsValid(self.Weapon) and !self.Revolver then
+					self:SetClip1(self.Weapon:Clip1() + 1)
+					self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
+				end
 			end)
 		end
 	end
@@ -169,32 +171,26 @@ function SWEP:ReloadThink()
 	if self:GetNWBool("Reloading") == true and self:GetNWFloat("ReloadTime") < CurTime() then
 		if (self.Weapon:Clip1() >= self.Primary.ClipSize or self.Owner:GetAmmoCount(self.Primary.Ammo) <= 0) then
 			self.Weapon:SendWeaponAnim(self.ReloadEndAnim)
-			self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
-			self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-			self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 			self:SetNWBool("Reloading", false)
 		else
 			self.Weapon:SetClip1(self.Weapon:Clip1() + 1)
 			self.Owner:RemoveAmmo(1, self.Primary.Ammo, false)
 			self.Weapon:SendWeaponAnim(self.InsertAnim)
-			self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 			self:SetNWFloat("ReloadTime", CurTime() + self.Owner:GetViewModel():SequenceDuration() + 0.02)
-			self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-			self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		end
+		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	end
 	
 	// Interrupt reload to shoot
 	if (self.Owner:KeyDown(IN_ATTACK) or self.Owner:KeyDown(IN_ATTACK2)) and self.Weapon:Clip1() < self.Primary.ClipSize and self.Weapon:GetNWBool("Reloading") then
-		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
-		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self.Weapon:SetNWFloat("ReloadTime", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		self.Weapon:SetNWBool("Reloading", false)
 		self.Weapon:SendWeaponAnim(self.ReloadEndAnim)
-		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function()
-			if not IsValid(self.Owner) then return end
-		end)
+		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
+		self.Weapon:SetNextSecondaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration())
 	end
 	
 end

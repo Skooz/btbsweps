@@ -10,14 +10,14 @@ SWEP.AdminSpawnable				= true
 
 SWEP.Primary.Sound				= Sound("BTB_p229.Fire")
 SWEP.Primary.Round				= ("zooks_357_490")
-SWEP.Primary.RPM				= 400						// This is in Rounds Per Minute
-SWEP.Primary.ClipSize			= 10						// Size of a clip
-SWEP.Primary.DefaultClip		= 20
+SWEP.Primary.RPM				= 300						// This is in Rounds Per Minute
+SWEP.Primary.ClipSize			= 12						// Size of a clip
+SWEP.Primary.DefaultClip		= 24
 SWEP.Primary.Automatic			= false						// Automatic/Semi Auto
-SWEP.Primary.Ammo				= "pistol"
+SWEP.Primary.Ammo				= "357"
 
 SWEP.Primary.KickUp				= 2					// Maximum up recoil (rise)
-SWEP.Primary.KickDown			= 2					// Maximum down recoil (skeet)
+SWEP.Primary.KickDown			= -2					// Maximum down recoil (skeet)
 SWEP.Primary.KickHorizontal		= 1					// Maximum up recoil (stock)
 
 SWEP.EjectsShells 		= true
