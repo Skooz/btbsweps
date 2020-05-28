@@ -292,12 +292,14 @@ function SWEP:PrimaryAttack()
 	
 	// Animation handling
 	if self.BoltAction then // Bolt-Actions
-		self:SendWeaponAnim(ACT_VM_SECONDARYATTACK)
+		self.Weapon:SendWeaponAnim(ACT_VM_SECONDARYATTACK)
 		self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
 		timer.Simple(self.Owner:GetViewModel():SequenceDuration(), 
 		function() 
-			self:SendWeaponAnim( ACT_SHOTGUN_PUMP ) 
-			self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())	
+			if IsValid(self.Weapon) and IsValid(self.Owner) then
+				self.Weapon:SendWeaponAnim( ACT_SHOTGUN_PUMP ) 
+				self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())	
+			end
 		end)
 	else // Regular weapons
 		if self:GetNWBool("InIron") then
@@ -353,11 +355,12 @@ function SWEP:ShootFX()
 	local fx = EffectData()
 	if self.EjectsShells then
 		timer.Simple(self.ShellDelay, function()
-			if not IsValid(self.Owner) or not IsFirstTimePredicted() or not self.Owner:Alive() then return end
-			fx:SetEntity(self.Weapon)
-			fx:SetNormal(self.Owner:GetAimVector())
-			fx:SetAttachment("2")
-			util.Effect(self.ShellEffect,fx)
+			if IsValid(self.Owner) and IsValid(self.Weapon) then
+				fx:SetEntity(self.Weapon)
+				fx:SetNormal(self.Owner:GetAimVector())
+				fx:SetAttachment("2")
+				util.Effect(self.ShellEffect,fx)
+			end
 		end)
 	end
 	
@@ -457,7 +460,7 @@ function SWEP:SecondaryAttack()
 	end
 	
 	self:SetNWFloat("InAnim", CurTime() + self.Owner:GetViewModel():SequenceDuration())
-	self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration() - 0.15)
+	//self.Weapon:SetNextPrimaryFire(CurTime() + self.Owner:GetViewModel():SequenceDuration() - 0.15)
 	
 end
 
@@ -491,7 +494,7 @@ but hey, it works.
 function SWEP:Reload()
 	
 	if self.Owner:KeyDown(IN_USE) or self:GetNWFloat("SwapAnim") > CurTime() or self:GetNWBool("Holster") or self.Weapon:Clip1() >= self.Primary.ClipSize then 
-		return
+		return false
 	elseif self:GetNWBool("InIron") and self.Weapon:Clip1() < self.Primary.ClipSize then
 		self:SecondaryAttack()
 	end
@@ -501,11 +504,12 @@ function SWEP:Reload()
 		self.Weapon:DefaultReload(self.EmptyReloadAnim)
 	elseif self.Weapon:Clip1() < self.Primary.ClipSize and self:Ammo1() > 0 then 	
 		self.Weapon:DefaultReload(self.ReloadAnim)
-		timer.Simple(self.Owner:GetViewModel():SequenceDuration() + 0.02, 
+		timer.Simple(self.Owner:GetViewModel():SequenceDuration() + 0.1, // Give it some extra time
 		function()
-			if (not IsValid(self.Owner) or not IsValid(self.Weapon) or not self.Owner:Alive()) or self.Revolver then return end
-			self:SetClip1(self.Weapon:Clip1() + 1)
-			self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
+			if IsValid(self.Owner) and IsValid(self.Weapon) and !self.Revolver then
+				self:SetClip1(self.Weapon:Clip1() + 1)
+				self.Owner:RemoveAmmo( 1, self:GetPrimaryAmmoType() )
+			end
 		end)
 	end
 	

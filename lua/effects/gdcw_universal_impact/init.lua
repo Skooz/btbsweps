@@ -102,7 +102,7 @@ end
 		local Debris = self.Emitter:Add( "effects/fleck_cement"..math.random(1,2), self.Pos )
 		if (Debris) then
 		Debris:SetVelocity ( self.DirVec * math.random(200,300*self.Scale) + VectorRand():GetNormalized() * 300*self.Scale )
-		Debris:SetDieTime( 10 )
+		Debris:SetDieTime( 20 )
 		Debris:SetStartAlpha( 255 )
 		Debris:SetEndAlpha( 0 )
 		Debris:SetStartSize( math.random(2,4*self.Scale) )
@@ -164,7 +164,7 @@ end
 		local Debris = self.Emitter:Add( "effects/fleck_cement"..math.random(1,2), self.Pos )
 		if (Debris) then
 		Debris:SetVelocity ( self.DirVec * math.random(200,300*self.Scale) + VectorRand():GetNormalized() * 300*self.Scale )
-		Debris:SetDieTime( 10 )
+		Debris:SetDieTime( 20 )
 		Debris:SetStartAlpha( 255 )
 		Debris:SetEndAlpha( 0 )
 		Debris:SetStartSize( math.random(1,5*self.Scale) )
@@ -311,7 +311,7 @@ end
 		local Debris = self.Emitter:Add( "effects/fleck_tile"..math.random(1,2), self.Pos )
 		if (Debris) then
 		Debris:SetVelocity ( self.DirVec * math.random(50,100*self.Scale) + VectorRand():GetNormalized() * 300*self.Scale )
-		Debris:SetDieTime( 10 )
+		Debris:SetDieTime( 20 )
 		Debris:SetStartAlpha( 255 )
 		Debris:SetEndAlpha( 0 )
 		Debris:SetStartSize( math.random(1,3*self.Scale) )
@@ -373,7 +373,7 @@ end
 		local Debris = self.Emitter:Add( "effects/fleck_wood"..math.random(1,2), self.Pos+self.DirVec )
 		if (Debris) then
 		Debris:SetVelocity ( self.DirVec * math.random(50,300*self.Scale) + VectorRand():GetNormalized() * 300*self.Scale )
-		Debris:SetDieTime( 10 )
+		Debris:SetDieTime( 20 )
 		Debris:SetStartAlpha( 255 )
 		Debris:SetEndAlpha( 0 )
 		Debris:SetStartSize( math.random(1,3*self.Scale) )
@@ -435,7 +435,7 @@ end
 		local Debris = self.Emitter:Add( "effects/fleck_glass"..math.random(1,3), self.Pos )
 		if (Debris) then
 		Debris:SetVelocity ( self.PenVec*-1 * math.random(0,500)*self.Scale + VectorRand():GetNormalized() * 100*self.Scale )
-		Debris:SetDieTime( 10 )
+		Debris:SetDieTime( 20 )
 		Debris:SetStartAlpha( 255 )
 		Debris:SetEndAlpha( 0 )
 		Debris:SetStartSize( math.random(2,4*self.Scale) )
